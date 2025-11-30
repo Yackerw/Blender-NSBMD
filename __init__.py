@@ -25,11 +25,15 @@ if "bpy" in locals():
 
 import bpy
 from bpy.app.handlers import persistent
-
+import operators
+import properties
+import panels
 
 
 classes = [
-    #panels.MyPanel
+    properties.NSBMDTexture,
+    operators.GetNSBMDTexture,
+    panels.NSBMD_PT_Texture
 ]
 
 
@@ -39,7 +43,7 @@ def register():
         bpy.utils.register_class(cls)
     #bpy.types.NODE_MT_add.append(menus.my_node_menu)
     #bpy.types.TOPBAR_MT_file_export.append(my_export.menu_func_export)
-    #my_props.custom_reg()
+    properties.custom_reg()
 
 
 def unregister():
@@ -47,7 +51,7 @@ def unregister():
         bpy.utils.unregister_class(cls)
     #bpy.types.NODE_MT_add.remove(menus.my_node_menu)
     #bpy.types.TOPBAR_MT_file_export.remove(my_export.menu_func_export)
-    #my_props.custom_unreg()
+    properties.custom_unreg()
 
 # for when nodegroups are real
 '''@persistent
