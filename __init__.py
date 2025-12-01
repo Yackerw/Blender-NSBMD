@@ -25,14 +25,14 @@ if "bpy" in locals():
 
 import bpy
 from bpy.app.handlers import persistent
-import operators
-import properties
+import blender_ops  # look i have a suspicion operators will make python crash out
+import blender_props
 import panels
 
 
 classes = [
-    properties.NSBMDTexture,
-    operators.GetNSBMDTexture,
+    blender_props.NSBMDTexture,
+    blender_ops.GetNSBMDTexture,
     panels.NSBMD_PT_Texture
 ]
 
@@ -43,7 +43,7 @@ def register():
         bpy.utils.register_class(cls)
     #bpy.types.NODE_MT_add.append(menus.my_node_menu)
     #bpy.types.TOPBAR_MT_file_export.append(my_export.menu_func_export)
-    properties.custom_reg()
+    blender_props.custom_reg()
 
 
 def unregister():
@@ -51,7 +51,7 @@ def unregister():
         bpy.utils.unregister_class(cls)
     #bpy.types.NODE_MT_add.remove(menus.my_node_menu)
     #bpy.types.TOPBAR_MT_file_export.remove(my_export.menu_func_export)
-    properties.custom_unreg()
+    blender_props.custom_unreg()
 
 # for when nodegroups are real
 '''@persistent
