@@ -23,6 +23,7 @@ class NSBMD_PT_Texture(GENERIC_panel, bpy.types.Panel):
         layout = self.layout
         if context.object.type == "ARMATURE":
             obj = context.object
+            layout.prop(obj.data, "nsbmd_texture_count")
             layout.operator("operator.nsbmd_get_textures")
             for i in obj.data.nsbmd_textures:
                 layout.prop(i, "texture", text="")

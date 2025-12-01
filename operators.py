@@ -24,11 +24,7 @@ class GetNSBMDTexture(bpy.types.Operator):
                     node_n = node.bl_idname
                     if node_n == 'ShaderNodeTexImage':
                         images.add(node.image)
-
-        while len(images) > len(context.object.data.nsbmd_textures):
-            context.object.data.nsbmd_textures.add()
-        while len(images) < len(context.object.data.nsbmd_textures):
-            context.object.data.nsbmd_textures.remove(len(context.object.data.nsbmd_textures) - 1)
+        context.object.data.nsbmd_texture_count = len(images)
 
         for img, tex in zip(list(images), obj.data.nsbmd_textures):
             tex.texture = img
