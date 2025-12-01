@@ -61,10 +61,10 @@ class GXWriter():
             diffZ = arg3 - self.prevPosZ
             if (abs(diffX) < 512 and abs(diffY) and abs(diffZ)):
                 self.commands[self.commandInd] |= GXFIFOCommands.CMD_VTX_DIFF << commandShift
-                self.commands.append((diffX & 0x3FF) | ((diffY & 0x3FF) << 10) | ((diffZ & 0x3FF) << 20)
+                self.commands.append((diffX & 0x3FF) | ((diffY & 0x3FF) << 10) | ((diffZ & 0x3FF) << 20))
             else:
                 self.commands[self.commandInd] |= GXFIFOCommands.CMD_VTX_16 << commandShift
-                self.commands.append((arg1 & 0xFFFF) | ((arg2 & 0xFFFF) << 16)
+                self.commands.append((arg1 & 0xFFFF) | ((arg2 & 0xFFFF) << 16))
                 self.commands.append((arg3 & 0xFFFF))
             
             self.prevPosx = arg1
@@ -130,9 +130,9 @@ def ConvertToGXList(vertList, triList, quadList):
             vert_minZ = curr_pos.z
         
         i = i + 1
-    vert_centerX = (maxX+minX)/2
-    vert_centerY = (maxY+minY)/2
-    vert_centerZ = (maxZ+minZ)/2
+    vert_centerX = (vert_maxX+vert_minX)/2
+    vert_centerY = (vert_maxY+vert_minY)/2
+    vert_centerZ = (vert_maxZ+vert_minZ)/2
     
     recenterX = 0
     recenterY = 0
@@ -160,4 +160,5 @@ def ConvertToGXList(vertList, triList, quadList):
     
     i = 0
     while (i < len(triList)):
+        pass
         
