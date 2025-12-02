@@ -23,7 +23,7 @@ class ExportNSBMD(bpy.types.Operator, ExportHelper):
         layout = self.layout
         # idk you dont need this stuff rn but you might want it later
         # preferences = bpy.context.preferences.addons[__package__.partition(".")[0]].preferences
-        # bpy.context.space_data.params.filename = "Uses Armature name as file name!"
+        bpy.context.space_data.params.filename = "Uses Armature name as file name!"
         # layout.label(text="Exporter settings:", icon="KEYFRAME_HLT")
         box = layout.box()
         box.label(text="Important!!:")
