@@ -3,6 +3,7 @@ from bpy.props import StringProperty, EnumProperty, BoolProperty, IntProperty
 from bpy_extras.io_utils import ExportHelper
 import export
 import textwrap
+from util import get_bpy_meshes
 
 
 class ExportNSBMD(bpy.types.Operator, ExportHelper):
@@ -56,8 +57,7 @@ class GetNSBMDTexture(bpy.types.Operator):
             return {'FINISHED'}
         materials = set()
         images = set()
-        scene_ob = set(context.scene.objects[:])
-        mesh_list = [a for a in obj.children if a.type == "MESH" and a in scene_ob]
+        mesh_list = get_bpy_meshes(context, obj, no_poly_test=True)
         for child in mesh_list:
             for m_slot in child.material_slots:
                 materials.add(m_slot.material)
