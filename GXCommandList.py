@@ -106,57 +106,6 @@ class GXWriter():
             self.commands.append(0)
 
 def ConvertToGXList(vertList, triList, quadList):
-    vert_maxX = -99999999
-    vert_maxY = -99999999
-    vert_maxZ = -99999999
-    vert_minX = 99999999
-    vert_minY = 99999999
-    vert_minZ = 99999999
-    
-    i = 0
-    while (i < len(vertList)):
-        curr_pos = vertList[i].Pos
-        if (vert_maxX < curr_pos.x):
-            vert_maxX = curr_pos.x
-        if (vert_minX > curr_pos.x):
-            vert_minX = curr_pos.x
-        if (vert_maxY < curr_pos.y):
-            vert_maxY = curr_pos.y
-        if (vert_minY > curr_pos.y):
-            vert_minY = curr_pos.y
-        if (vert_maxZ < curr_pos.z):
-            vert_maxZ = curr_pos.z
-        if (vert_minZ > curr_pos.z):
-            vert_minZ = curr_pos.z
-        
-        i = i + 1
-    vert_centerX = (vert_maxX+vert_minX)/2
-    vert_centerY = (vert_maxY+vert_minY)/2
-    vert_centerZ = (vert_maxZ+vert_minZ)/2
-    
-    recenterX = 0
-    recenterY = 0
-    recenterZ = 0
-    rescaleX = 1
-    rescaleY = 1
-    rescaleZ = 1
-    
-    max_pos = 32767
-    min_pos = -32768
-    
-    if vert_maxX > max_pos or vert_minX < min_pos:
-        recenterX = -vert_centerX
-    if vert_maxY > max_pos or vert_minY < min_pos:
-        recenterY = -vert_centerY
-    if vert_maxZ > max_pos or vert_minZ < min_pos:
-        recenterZ = -vert_centerZ
-    
-    if vert_maxX > max_pos:
-        rescaleX = vert_maxX / max_pos
-    if vert_maxY > max_pos:
-        recenterY = vert_maxY / max_pos
-    if vert_maxZ > max_pos:
-        recenterZ = vert_maxZ / max_pos
     
     i = 0
     while (i < len(triList)):
