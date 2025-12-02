@@ -33,6 +33,7 @@ import panels
 classes = [
     blender_props.NSBMDTexture,
     blender_ops.GetNSBMDTexture,
+    panels.NSBMD_PT_About,
     panels.NSBMD_PT_Texture,
     blender_ops.ExportNSBMD,
 ]
