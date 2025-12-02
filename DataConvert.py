@@ -14,8 +14,7 @@ class NSBMDDataVert():
         self.colg = 0
         self.colb = 0
         self.cola = 0
-        self.weights = []
-        self.boneInds = []
+        self.targetMatrix = 0
 
 class NSBMDModelData():
     def __init__(self):
