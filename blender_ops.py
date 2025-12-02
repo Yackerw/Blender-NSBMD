@@ -1,4 +1,47 @@
 import bpy
+from bpy.props import StringProperty, EnumProperty, BoolProperty, IntProperty
+from bpy_extras.io_utils import ExportHelper
+import export
+import textwrap
+
+
+class ExportNSBMD(bpy.types.Operator, ExportHelper):
+    """Export an NSBMD Model archive"""
+    bl_idname = "export.nsbmd"
+    bl_label = "Export NSBMD Model"
+    bl_options = {'REGISTER', 'UNDO'}
+    filename_ext = ""
+    filter_glob: StringProperty(
+        default="",
+        options={'HIDDEN'},
+        maxlen=255)
+
+    # idk if you want any toggles
+
+    def draw(self, context):
+        layout = self.layout
+        # idk you dont need this stuff rn but you might want it later
+        # preferences = bpy.context.preferences.addons[__package__.partition(".")[0]].preferences
+        # bpy.context.space_data.params.filename = "Uses Armature name as file name!"
+        # layout.label(text="Exporter settings:", icon="KEYFRAME_HLT")
+        box = layout.box()
+        box.label(text="Important!!:")
+
+        letter_count = int(context.region.width // 8)
+        box.scale_y = 0.6
+        info_text = "Please select the texture format in the NSBMD Tab in 3d view (with your armature active)"
+        wrapped_text = textwrap.TextWrapper(width=letter_count).wrap(text=info_text)
+        [box.label(text=a) for a in wrapped_text]
+        #box.row().prop(self, "setting_i_suppose")
+
+    def execute(self, context):
+        # preferences = bpy.context.preferences.addons[__package__.partition(".")[0]].preferences
+        settings = {}
+        return export.ExportModel(context, self.filepath, settings).execute()
+
+
+def menu_func_export(self, context):  # add to dynamic menu
+    self.layout.operator(ExportNSBMD.bl_idname, text="Export NSBMD Model")
 
 
 class GetNSBMDTexture(bpy.types.Operator):

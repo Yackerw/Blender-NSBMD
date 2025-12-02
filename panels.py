@@ -6,7 +6,7 @@ import bpy
 class GENERIC_panel:
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Blender NSBMD"
+    bl_category = "NSBMD"
 
 
 class NSBMD_PT_Texture(GENERIC_panel, bpy.types.Panel):

@@ -33,7 +33,8 @@ import panels
 classes = [
     blender_props.NSBMDTexture,
     blender_ops.GetNSBMDTexture,
-    panels.NSBMD_PT_Texture
+    panels.NSBMD_PT_Texture,
+    blender_ops.ExportNSBMD,
 ]
 
 
@@ -42,7 +43,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     #bpy.types.NODE_MT_add.append(menus.my_node_menu)
-    #bpy.types.TOPBAR_MT_file_export.append(my_export.menu_func_export)
+    bpy.types.TOPBAR_MT_file_export.append(blender_ops.menu_func_export)
     blender_props.custom_reg()
 
 
@@ -50,7 +51,7 @@ def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
     #bpy.types.NODE_MT_add.remove(menus.my_node_menu)
-    #bpy.types.TOPBAR_MT_file_export.remove(my_export.menu_func_export)
+    bpy.types.TOPBAR_MT_file_export.remove(blender_ops.menu_func_export)
     blender_props.custom_unreg()
 
 # for when nodegroups are real
