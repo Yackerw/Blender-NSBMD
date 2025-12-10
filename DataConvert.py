@@ -42,19 +42,19 @@ def ConvertVerts(verts, useVertColors, textureResolutionX, textureResolutionY, m
     
     i = 0
     while (i < len(verts)):
-        curr_pos = verts[i].Pos
-        if (vert_maxX < curr_pos.x):
-            vert_maxX = curr_pos.x
-        if (vert_minX > curr_pos.x):
-            vert_minX = curr_pos.x
-        if (vert_maxY < curr_pos.y):
-            vert_maxY = curr_pos.y
-        if (vert_minY > curr_pos.y):
-            vert_minY = curr_pos.y
-        if (vert_maxZ < curr_pos.z):
-            vert_maxZ = curr_pos.z
-        if (vert_minZ > curr_pos.z):
-            vert_minZ = curr_pos.z
+        curr_v = verts[i]
+        if (vert_maxX < curr_v.x):
+            vert_maxX = curr_v.x
+        if (vert_minX > curr_v.x):
+            vert_minX = curr_v.x
+        if (vert_maxY < curr_v.y):
+            vert_maxY = curr_v.y
+        if (vert_minY > curr_v.y):
+            vert_minY = curr_v.y
+        if (vert_maxZ < curr_v.z):
+            vert_maxZ = curr_v.z
+        if (vert_minZ > curr_v.z):
+            vert_minZ = curr_v.z
         
         i = i + 1
     vert_centerX = (vert_maxX+vert_minX)/2
