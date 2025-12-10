@@ -25,9 +25,9 @@ if "bpy" in locals():
 
 import bpy
 from bpy.app.handlers import persistent
-import blender_ops  # look i have a suspicion operators will make python crash out
-import blender_props
-import panels
+from . import blender_ops  # look i have a suspicion operators will make python crash out
+from . import blender_props
+from . import panels
 
 
 classes = [

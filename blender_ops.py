@@ -1,9 +1,9 @@
 import bpy
 from bpy.props import StringProperty, EnumProperty, BoolProperty, IntProperty
 from bpy_extras.io_utils import ExportHelper
-import export
 import textwrap
-from util import get_bpy_meshes
+from . import export
+from .util import get_bpy_meshes
 
 
 class ExportNSBMD(bpy.types.Operator, ExportHelper):

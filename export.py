@@ -1,7 +1,7 @@
 import bpy
 import mathutils
-import DataConvert
-import GXCommandList
+from . import DataConvert
+from . import GXCommandList
 
 class NSVert:
     def __init__(self):
