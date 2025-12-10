@@ -39,65 +39,65 @@ class GXWriter():
         
     def PushCommand(self, cmd, arg1, arg2, arg3):
         commandShift = self.commandCount * 8
-        if cmd == GXCommands.CMD_TEXCOORD:
+        if cmd == GXCommands.CMD_TEXCOORD.value:
             newUV = (arg1 & 0xFFFF) | ((arg2 & 0xFFFF) << 16)
             if self.prevUV == newUV:
                 return
-            self.commands[self.commandInd] |= GXFIFOCommands.CMD_TEXCOORD << commandShift
+            self.commands[self.commandInd] |= GXFIFOCommands.CMD_TEXCOORD.value << commandShift
             self.commands.append(newUV)
             self.prevUV = newUV
-        elif cmd == GXCommands.CMD_NORMAL:
+        elif cmd == GXCommands.CMD_NORMAL.value:
             newNorm = (arg1 & 0x3FF) | ((arg2 & 0x3FF) << 10) | ((arg3 & 0x3FF) << 20)
             if self.prevNorm == newNorm:
                 return
-            self.commands[self.commandInd] |= GXFIFOCommands.CMD_NORMAL << commandShift
+            self.commands[self.commandInd] |= GXFIFOCommands.CMD_NORMAL.value << commandShift
             self.commands.append(newNorm)
             self.prevNorm = newNorm
-        elif cmd == GXCommands.CMD_POS:
+        elif cmd == GXCommands.CMD_POS.value:
             diffX = arg1 - self.prevPosx
             diffY = arg2 - self.prevPosy
             diffZ = arg3 - self.prevPosZ
             if (abs(diffX) < 512 and abs(diffY) and abs(diffZ)):
-                self.commands[self.commandInd] |= GXFIFOCommands.CMD_VTX_DIFF << commandShift
+                self.commands[self.commandInd] |= GXFIFOCommands.CMD_VTX_DIFF.value << commandShift
                 self.commands.append((diffX & 0x3FF) | ((diffY & 0x3FF) << 10) | ((diffZ & 0x3FF) << 20))
             else:
-                self.commands[self.commandInd] |= GXFIFOCommands.CMD_VTX_16 << commandShift
+                self.commands[self.commandInd] |= GXFIFOCommands.CMD_VTX_16.value << commandShift
                 self.commands.append((arg1 & 0xFFFF) | ((arg2 & 0xFFFF) << 16))
                 self.commands.append((arg3 & 0xFFFF))
             
             self.prevPosx = arg1
             self.prevPosy = arg2
             self.prevPosz = arg3
-        elif cmd == GXCommands.CMD_MTX:
+        elif cmd == GXCommands.CMD_MTX.value:
             if (self.prevMtx == arg1):
                 return
-            self.commands[self.commandInd] |= GXFIFOCommands.CMD_MTX_RESTORE << commandShift
+            self.commands[self.commandInd] |= GXFIFOCommands.CMD_MTX_RESTORE.value << commandShift
             self.commands.append(arg1)
             self.prevMtx = arg1
             self.prevNorm = 0.5 # invalidate normal as well
-        elif cmd == GXCommands.CMD_TRI:
-            self.commands[self.commandInd] |= GXFIFOCommands.CMD_BEGINVTX << commandShift
+        elif cmd == GXCommands.CMD_TRI.value:
+            self.commands[self.commandInd] |= GXFIFOCommands.CMD_BEGINVTX.value << commandShift
             self.commands.append(0)
-        elif cmd == GXCommands.CMD_TRISTRIP:
-            self.commands[self.commandInd] |= GXFIFOCommands.CMD_BEGINVTX << commandShift
+        elif cmd == GXCommands.CMD_TRISTRIP.value:
+            self.commands[self.commandInd] |= GXFIFOCommands.CMD_BEGINVTX.value << commandShift
             self.commands.append(2)
-        elif cmd == GXCommands.CMD_QUAD:
-            self.commands[self.commandInd] |= GXFIFOCommands.CMD_BEGINVTX << commandShift
+        elif cmd == GXCommands.CMD_QUAD.value:
+            self.commands[self.commandInd] |= GXFIFOCommands.CMD_BEGINVTX.value << commandShift
             self.commands.append(1)
-        elif cmd == GXCommands.CMD_QUADSTRIP:
-            self.commands[self.commandInd] |= GXFIFOCommands.CMD_BEGINVTX << commandShift
+        elif cmd == GXCommands.CMD_QUADSTRIP.value:
+            self.commands[self.commandInd] |= GXFIFOCommands.CMD_BEGINVTX.value << commandShift
             self.commands.append(3)
-        elif cmd == GXCommands.CMD_COLOR:
+        elif cmd == GXCommands.CMD_COLOR.value:
             newColor = (arg1 & 0x1F) | ((arg2 & 0x1F) << 5) | ((arg3 & 0x1F) << 10)
             if self.prevColor == newColor:
                 return
-            self.commands[self.commandInd] |= GXFIFOCommands.CMD_COLOR << commandShift
+            self.commands[self.commandInd] |= GXFIFOCommands.CMD_COLOR.value << commandShift
             self.commands.append(newColor)
             self.prevColor = newColor
         else:
-            self.commands[self.commandInd] |= GXFIFOCommands.CMD_NOP << commandShift
+            self.commands[self.commandInd] |= GXFIFOCommands.CMD_NOP.value << commandShift
         
-        if cmd == GXCommands.CMD_TRI or cmd == GXCommands.CMD_TRISTRIP or cmd == GXCommands.CMD_QUAD or cmd == GXCommands.CMD_QUADSTRIP:
+        if cmd == GXCommands.CMD_TRI.value or cmd == GXCommands.CMD_TRISTRIP.value or cmd == GXCommands.CMD_QUAD.value or cmd == GXCommands.CMD_QUADSTRIP.value:
             self.prevUV = 0.5 # we pass in ints, 0.5 for uninitialized
             self.prevNorm = 0.5
             self.prevPosx = 0.5
@@ -120,19 +120,21 @@ def ConvertToGXList(vertList, triList, quadList, useColor):
     i = 0
     # TODO: strips
     if (len(triList) > 0):
-        GXList.PushCommand(GXCommands.CMD_TRI)
+        GXList.PushCommand(GXCommands.CMD_TRI, 0, 0, 0)
         while (i < len(triList)):
             GXList.PushCommand(GXCommands.CMD_MTX, vertList[triList[i]].targetMatrix, 0, 0)
             GXList.PushCommand(GXCommands.CMD_TEXCOORD, vertList[triList[i]].u, vertList[triList[i]].v, 0)
             GXList.PushCommand(GXCommands.CMD_NORMAL, vertList[triList[i]].normx, vertList[triList[i]].normy, vertList[triList[i]].normz)
             GXList.PushCommand(GXCommands.CMD_POS, vertList[triList[i]].x, vertList[triList[i]].y, vertList[triList[i]].z)
+            i += 1
     
     if (len(quadList) > 0):
-        GXList.PushCommand(GXCommands.CMD_QUAD)
+        GXList.PushCommand(GXCommands.CMD_QUAD, 0, 0, 0)
         while (i < len(quadList)):
             GXList.PushCommand(GXCommands.CMD_MTX, vertList[quadList[i]].targetMatrix, 0, 0)
             GXList.PushCommand(GXCommands.CMD_TEXCOORD, vertList[quadList[i]].u, vertList[quadList[i]].v, 0)
             GXList.PushCommand(GXCommands.CMD_NORMAL, vertList[quadList[i]].normx, vertList[quadList[i]].normy, vertList[quadList[i]].normz)
             GXList.PushCommand(GXCommands.CMD_POS, vertList[quadList[i]].x, vertList[quadList[i]].y, vertList[quadList[i]].z)
-    
+            i += 1
+            
     return GXList.commands

@@ -122,14 +122,15 @@ def ConvertVerts(verts, useVertColors, textureResolutionX, textureResolutionY, m
         data.modelVerts.append(newVert)
         
         # TODO: WEIGHTS
+        i += 1
     
-    self.NSBCommands.append(4)
-    self.NSBCommands.append(materialInd)
-    self.NSBCommands.append(2)
-    self.NSBCommands.append(materialInd)
-    self.NSBCommands.append(0xB)
-    self.NSBCommands.append(0x5)
-    self.NSBCommands.append(meshInd)
-    self.NSBCommands.append(1) # END: TODO: handle this when writing so we cover all meshes
+    data.NSBCommands.append(4)
+    data.NSBCommands.append(materialInd)
+    data.NSBCommands.append(2)
+    data.NSBCommands.append(materialInd)
+    data.NSBCommands.append(0xB)
+    data.NSBCommands.append(0x5)
+    data.NSBCommands.append(meshInd)
+    data.NSBCommands.append(1) # END: TODO: handle this when writing so we cover all meshes
     
     return data

@@ -26,11 +26,11 @@ class NSSubModel:
 
 class NSModel:
     def __init__(self):
-        subModels = []
+        self.subModels = []
         
 
 def ProcessMesh(mesh):
-    mesh = NSModel()
+    NSMesh = NSModel()
     for matId in range(0,len(mesh.materials)):
         vertTuples = {}
         subMesh = NSSubModel()
@@ -38,14 +38,14 @@ def ProcessMesh(mesh):
             if face.material_index == matId:
                 for loop_ind in range(face.loop_start, face.loop_start+3):
                     newVert = NSVert()
-                    loop = obj.loops[loop_ind]
-                    newVert.x = obj.vertices[loop.vertex_index].undeformed_co.x
-                    newVert.y = obj.vertices[loop.vertex_index].undeformed_co.y
-                    newVert.z = obj.vertices[loop.vertex_index].undeformed_co.z
+                    loop = mesh.loops[loop_ind]
+                    newVert.x = mesh.vertices[loop.vertex_index].undeformed_co.x
+                    newVert.y = mesh.vertices[loop.vertex_index].undeformed_co.y
+                    newVert.z = mesh.vertices[loop.vertex_index].undeformed_co.z
                     newVert.normx = loop.normal.x
                     newVert.normy = loop.normal.y
                     newVert.normz = loop.normal.z
-                    for uv_layer in obj.uv_layers:
+                    for uv_layer in mesh.uv_layers:
                         uv = uv_layer.uv[loop_ind].vector
                         newVert.u = uv.x
                         newVert.v = uv.y
@@ -58,8 +58,8 @@ def ProcessMesh(mesh):
                         subMesh.tris.append(len(subMesh.verts)-1)
                     else:
                         subMesh.tris.append(vertTuples[vertAsTuple])
-        mesh.subModels.append(subMesh)
-    return mesh
+        NSMesh.subModels.append(subMesh)
+    return NSMesh
 
 class ExportModel:
     def __init__(self, context, filepath, settings):
@@ -76,10 +76,10 @@ class ExportModel:
             bpy.context.window_manager.popup_menu(draw_func=draw, title="NSBMD Exporter", icon="ERROR")
             return {'CANCELLED'}
         
-        mesh = ProcessMesh(selected_obj)
+        mesh = ProcessMesh(selected_obj.to_mesh(preserve_all_data_layers=True,depsgraph=bpy.context.evaluated_depsgraph_get()))
         
-        newConv = DataConvert.ConvertVerts(mesh.verts,False,64,64,True,0,0)
+        newConv = DataConvert.ConvertVerts(mesh.subModels[0].verts,False,64,64,True,0,0)
         
-        GXList = GXCommandList.ConvertToGXList(newConv.modelVerts, mesh.tris, [], [])
+        GXList = GXCommandList.ConvertToGXList(newConv.modelVerts, mesh.subModels[0].tris, [], [])
 
         return{'FINISHED'}
