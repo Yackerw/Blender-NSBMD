@@ -64,3 +64,5 @@ class NSBMD_PT_Texture(GENERIC_panel, bpy.types.Panel):
             for i in obj.data.nsbmd_textures:
                 layout.prop(i, "texture", text="")
                 layout.prop(i, "image_compression", text="")
+                if i.image_compression not in {"5", "7"}:
+                    layout.prop(i, "dq9_palette")

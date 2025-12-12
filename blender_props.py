@@ -27,7 +27,8 @@ class NSBMDTexture(bpy.types.PropertyGroup):
             ('2', '2 bit color palette', ""),
             ('3', '4 bit color palette', ""),
             ('4', '8 bit color palette', ""),
-            ('5', '3bpp compressed', ""),
             ('6', '5 bit alpha, 3 bit color palette', ""),
             ('7', '16 bit color', ""),
         ))
+    # ('5', '3bpp compressed', ""),
+    dq9_palette: bpy.props.BoolProperty(name="DQ9 character texture", description="Dragon Quest 9 character texture (that has skin)", default=False)
