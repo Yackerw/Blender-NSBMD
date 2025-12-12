@@ -3,15 +3,6 @@ from typing import BinaryIO, Tuple, Any, Union
 
 # blender functions
 
-
-def get_bpy_meshes(context, arma_obj, no_poly_test=False):
-    scene_ob = set(context.scene.objects[:])
-    if no_poly_test:
-        mesh_list = [a for a in arma_obj.children if a.type == "MESH" and a in scene_ob]
-    else:
-        mesh_list = [a for a in arma_obj.children if a.type == "MESH" and len(a.data.polygons) > 0 and a in scene_ob]
-    return mesh_list
-
 # file write functions
 
 

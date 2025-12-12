@@ -2,13 +2,13 @@ import bpy
 
 
 def custom_reg():
-    bpy.types.Armature.nsbmd_texture_count = bpy.props.IntProperty(name="Texture Count", default=0, min=0, max=255, update=update_texture_count)
-    bpy.types.Armature.nsbmd_textures = bpy.props.CollectionProperty(type=NSBMDTexture)
+    bpy.types.Mesh.nsbmd_texture_count = bpy.props.IntProperty(name="Texture Count", default=0, min=0, max=255, update=update_texture_count)
+    bpy.types.Mesh.nsbmd_textures = bpy.props.CollectionProperty(type=NSBMDTexture)
 
 
 def custom_unreg():
-    del bpy.types.Armature.nsbmd_texture_count
-    del bpy.types.Armature.nsbmd_textures
+    del bpy.types.Mesh.nsbmd_texture_count
+    del bpy.types.Mesh.nsbmd_textures
 
 
 def update_texture_count(self, context):

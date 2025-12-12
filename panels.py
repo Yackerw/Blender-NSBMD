@@ -50,14 +50,14 @@ class NSBMD_PT_Texture(GENERIC_panel, bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        if context.object is not None and context.object.type == "ARMATURE":
-            if bpy.context.active_object and bpy.context.active_object.mode == "OBJECT":
+        if context.object is not None and context.object.type == "MESH":
+            if bpy.context.active_object:
                 return True
         return False
 
     def draw(self, context):
         layout = self.layout
-        if context.object.type == "ARMATURE":
+        if context.object.type == "MESH":
             obj = context.object
             layout.prop(obj.data, "nsbmd_texture_count")
             layout.operator("operator.nsbmd_get_textures")
