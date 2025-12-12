@@ -27,6 +27,15 @@ class NSBMDModelData():
         self.scaleY = 4096
         self.scaleZ = 4096
         self.usesColor = False
+        self.vertCount = 0
+        self.triCount = 0
+        self.quadCount = 0
+        self.boundsX = 0
+        self.boundsY = 0
+        self.boundsZ = 0
+        self.boundsXWidth = 0
+        self.boundsHeight = 0
+        self.boundsZWidth = 0
 
 def ConvertVerts(verts, useVertColors, textureResolutionX, textureResolutionY, maintainMatrix, materialInd, meshInd):
     data = NSBMDModelData()
@@ -71,7 +80,7 @@ def ConvertVerts(verts, useVertColors, textureResolutionX, textureResolutionY, m
     max_pos = 32767/8
     min_pos = -8
     
-    if vert_maxX > max_pos or vert_minX < min_pos:
+    """if vert_maxX > max_pos or vert_minX < min_pos:
         recenterX = -vert_centerX
         vert_maxX += recenterX 
     if vert_maxY > max_pos or vert_minY < min_pos:
@@ -79,7 +88,7 @@ def ConvertVerts(verts, useVertColors, textureResolutionX, textureResolutionY, m
         vert_maxY += recenterY
     if vert_maxZ > max_pos or vert_minZ < min_pos:
         recenterZ = -vert_centerZ
-        vert_maxZ += recenterZ
+        vert_maxZ += recenterZ"""
     
     if vert_maxX > max_pos:
         rescaleX = vert_maxX / max_pos
@@ -88,12 +97,24 @@ def ConvertVerts(verts, useVertColors, textureResolutionX, textureResolutionY, m
     if vert_maxZ > max_pos:
         rescaleZ = vert_maxZ / max_pos
     
-    data.offsX = -round(recenterX*4096)
-    data.offsY = -round(recenterY*4096)
-    data.offsZ = -round(recenterZ*4096)
+    rescaleX = max(rescaleX,rescaleY,rescaleZ)
+    rescaleY = rescaleX
+    rescaleZ = rescaleX
+    
+    #data.offsX = -round(recenterX*4096)
+    #data.offsY = -round(recenterY*4096)
+    #data.offsZ = -round(recenterZ*4096)
     data.scaleX = round(rescaleX*4096)
     data.scaleY = round(rescaleY*4096)
     data.scaleZ = round(rescaleZ*4096)
+    
+    data.boundsX = int(vert_centerX*rescaleX*4096)
+    data.boundsY = int(vert_centerY*rescaleY*4096)
+    data.boundsZ = int(vert_centerZ*rescaleZ*4096)
+    data.boundsXWidth = int(max(abs(vert_centerX - vert_maxX), abs(vert_centerX - vert_minX))*rescaleX*4096)
+    data.boundsHeight = int(max(abs(vert_centerY - vert_maxY), abs(vert_centerY - vert_minY))*rescaleY*4096)
+    data.boundsZWidth = int(max(abs(vert_centerZ - vert_maxZ), abs(vert_centerZ - vert_minZ))*rescaleZ*4096)
+    
     
     # maybe do something about UVs?
     

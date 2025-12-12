@@ -2,6 +2,7 @@ import bpy
 import mathutils
 from . import DataConvert
 from . import GXCommandList
+from . import WriteFile
 
 class NSVert:
     def __init__(self):
@@ -63,7 +64,7 @@ def ProcessMesh(mesh):
 
 class ExportModel:
     def __init__(self, context, filepath, settings):
-        pass
+        self.filepath = filepath
 
     def execute(self):
         # code to get armatures if people selected meshes
@@ -80,6 +81,8 @@ class ExportModel:
         
         newConv = DataConvert.ConvertVerts(mesh.subModels[0].verts,False,64,64,True,0,0)
         
-        GXList = GXCommandList.ConvertToGXList(newConv.modelVerts, mesh.subModels[0].tris, [], [])
+        GXList = GXCommandList.ConvertToGXList(newConv, mesh.subModels[0].tris, [], [])
+        
+        WriteFile.WriteFile(GXList, newConv, self.filepath)
 
         return{'FINISHED'}

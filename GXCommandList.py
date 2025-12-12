@@ -113,7 +113,9 @@ class GXWriter():
             self.commandInd = len(self.commands)
             self.commands.append(0)
 
-def ConvertToGXList(vertList, triList, quadList, useColor):
+def ConvertToGXList(convData, triList, quadList, useColor):
+    
+    vertList = convData.modelVerts
     
     GXList = GXWriter()
     
@@ -136,5 +138,7 @@ def ConvertToGXList(vertList, triList, quadList, useColor):
             GXList.PushCommand(GXCommands.CMD_NORMAL, vertList[quadList[i]].normx, vertList[quadList[i]].normy, vertList[quadList[i]].normz)
             GXList.PushCommand(GXCommands.CMD_POS, vertList[quadList[i]].x, vertList[quadList[i]].y, vertList[quadList[i]].z)
             i += 1
-            
+    
+    convData.vertCount = len(triList)
+    convData.triCount = int(len(triList)/3)
     return GXList.commands
