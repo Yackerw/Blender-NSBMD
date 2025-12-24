@@ -4,7 +4,8 @@ from . import util
 def WriteBones(f, convertedData):
     boneCount = 0
     # bone count
-    util.write_short(f, "<", boneCount)
+    util.write_byte(f, 0)
+    util.write_byte(f, boneCount)
     # header size
     header_size_offs = f.tell()
     util.write_short(f, "<", 0)
@@ -27,11 +28,53 @@ def WriteBones(f, convertedData):
     while i < boneCount:
         bone_offses.append(f.tell())
         util.write_integer(f, "<", 0)
+        i += 1
     # TODO: write names and bone info; names need to be 16 aligned
     header_size = f.tell()-header_size_offs
     f.seek(header_size_offs)
     util.write_short(f, "<", header_size+2)
     f.seek(0, 2)
+
+def WriteCommands(f, commands):
+    i = 0
+    while i < len(commands):
+        util.write_byte(f, "<", commands[i])
+        i += 1
+    util.write_aligned(f, 4)
+
+def WriteMaterials(f):
+    materialCount = 1
+    texture_pairing_offs = f.tell()
+    util.write_short(f, "<", 0) # texture pairing offset
+    palette_pairing_offs = f.tell()
+    util.write_short(f, "<", 0)
+    # same info block as bones use
+    util.write_byte(f, 0)
+    util.write_byte(f, materialCount) # material count
+    header_size_offs = f.tell()
+    util.write_short(f, 0) 
+    util.write_short(f, 8) # this part size
+    # offset to actual info ?
+    util.write_short(f, "<", 0xC+(4*materialCount))
+    # ?
+    util.write_integer(f, "<", 0x17F)
+    # hashes?
+    i = 0
+    while i < materialCount:
+        util.write_integer(f, "<", 0)
+        i += 1
+    
+    # another size
+    util.write_short(f, "<", 4)
+    util.write_short(f, "<", 4+(4*materialCount))
+    
+    material_offses = []
+    i = 0
+    while i < materialCount:
+        material_offses.append(f.tell())
+        util.write_integer(f, "<", 0)
+        i += 1
+    
 
 def WriteBMD(f, GXList, convertedData):
     util.write_integer(f, "<", 0x304C444D)
@@ -42,7 +85,7 @@ def WriteBMD(f, GXList, convertedData):
     util.write_short(f, "<", 1)
     # model offset, fill in later: relative to MDL0 size position in bytes
     model_offset_offs = f.tell()
-    util.write_short(f, "<", 0)
+    util.write_short(f, "<", 8) # TODO: change if we add multiple meshes?
     # model size
     model_size_offs = f.tell()
     util.write_integer(f, "<", 0)
@@ -88,6 +131,17 @@ def WriteBMD(f, GXList, convertedData):
     util.write_integer(f, "<", 4096)
     
     WriteBones(f, convertedData)
+    
+    curr_offs = f.tell()
+    f.seek(render_list_offs, 0)
+    util.write_integer(f, "<", curr_offs-model_size_offs)
+    f.seek(0, 2)
+    WriteCommands(f, convertedData.NSBCommands)
+    curr_offs = f.tell()
+    f.seek(material_offs_offs, 0)
+    util.write_integer(f, "<", curr_offs-material_offs_offs)
+    f.seek(0, 2)
+    WriteMaterials(f) # TODO: MATERIALS
     
 
 def WriteFile(GXList, convertedData, filepath):
