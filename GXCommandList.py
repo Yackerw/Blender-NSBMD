@@ -56,7 +56,7 @@ class GXWriter():
         elif cmd == GXCommands.CMD_POS.value:
             diffX = arg1 - self.prevPosx
             diffY = arg2 - self.prevPosy
-            diffZ = arg3 - self.prevPosZ
+            diffZ = arg3 - self.prevPosz
             if (abs(diffX) < 512 and abs(diffY) and abs(diffZ)):
                 self.commands[self.commandInd] |= GXFIFOCommands.CMD_VTX_DIFF.value << commandShift
                 self.commands.append((diffX & 0x3FF) | ((diffY & 0x3FF) << 10) | ((diffZ & 0x3FF) << 20))
@@ -122,21 +122,21 @@ def ConvertToGXList(convData, triList, quadList, useColor):
     i = 0
     # TODO: strips
     if (len(triList) > 0):
-        GXList.PushCommand(GXCommands.CMD_TRI, 0, 0, 0)
+        GXList.PushCommand(GXCommands.CMD_TRI.value, 0, 0, 0)
         while (i < len(triList)):
-            GXList.PushCommand(GXCommands.CMD_MTX, vertList[triList[i]].targetMatrix, 0, 0)
-            GXList.PushCommand(GXCommands.CMD_TEXCOORD, vertList[triList[i]].u, vertList[triList[i]].v, 0)
-            GXList.PushCommand(GXCommands.CMD_NORMAL, vertList[triList[i]].normx, vertList[triList[i]].normy, vertList[triList[i]].normz)
-            GXList.PushCommand(GXCommands.CMD_POS, vertList[triList[i]].x, vertList[triList[i]].y, vertList[triList[i]].z)
+            GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[triList[i]].targetMatrix, 0, 0)
+            GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[triList[i]].u, vertList[triList[i]].v, 0)
+            GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[triList[i]].normx, vertList[triList[i]].normy, vertList[triList[i]].normz)
+            GXList.PushCommand(GXCommands.CMD_POS.value, vertList[triList[i]].x, vertList[triList[i]].y, vertList[triList[i]].z)
             i += 1
     
     if (len(quadList) > 0):
-        GXList.PushCommand(GXCommands.CMD_QUAD, 0, 0, 0)
+        GXList.PushCommand(GXCommands.CMD_QUAD.value, 0, 0, 0)
         while (i < len(quadList)):
-            GXList.PushCommand(GXCommands.CMD_MTX, vertList[quadList[i]].targetMatrix, 0, 0)
-            GXList.PushCommand(GXCommands.CMD_TEXCOORD, vertList[quadList[i]].u, vertList[quadList[i]].v, 0)
-            GXList.PushCommand(GXCommands.CMD_NORMAL, vertList[quadList[i]].normx, vertList[quadList[i]].normy, vertList[quadList[i]].normz)
-            GXList.PushCommand(GXCommands.CMD_POS, vertList[quadList[i]].x, vertList[quadList[i]].y, vertList[quadList[i]].z)
+            GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[quadList[i]].targetMatrix, 0, 0)
+            GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[quadList[i]].u, vertList[quadList[i]].v, 0)
+            GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[quadList[i]].normx, vertList[quadList[i]].normy, vertList[quadList[i]].normz)
+            GXList.PushCommand(GXCommands.CMD_POS.value, vertList[quadList[i]].x, vertList[quadList[i]].y, vertList[quadList[i]].z)
             i += 1
     
     convData.vertCount = len(triList)

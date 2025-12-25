@@ -93,6 +93,33 @@ def WriteMaterials(f):
     util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point. a guess is texture matrix scale?
     util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point
     # note: gbatek implies a full texture matrix can be stored in here, but doesn't understand how or why. worth investigating
+
+def WriteVertexMesh(f, GXList):
+    listStartOffs = f.tell()
+    meshNameDummy = []
+    meshNameDummy.append("Mesh")
+    infoOffs = WriteInfoBlock(f, 1, meshNameDummy)
+    curr_offs = f.tell()
+    f.seek(infoOffs.offsetOffsets[0], 0)
+    util.write_integer(f, "<", curr_offs-listStartOffs)
+    f.seek(0, 2)
+    
+    vertexMeshStart = f.tell()
+    util.write_short(f, "<", 0) # dummy
+    util.write_short(f, "<", 0x10) # ? size of segment?
+    util.write_integer(f, "<", 0xC) # ?? look into this value
+    GXListOffs = f.tell()
+    util.write_integer(f, "<", 0) # offset to GX command list
+    util.write_integer(f, "<", len(GXList)*4) # GX command list size
+    
+    curr_offs = f.tell()
+    f.seek(GXListOffs, 0)
+    util.write_integer(f, "<", curr_offs-vertexMeshStart)
+    f.seek(0, 2)
+    i = 0
+    while i < len(GXList):
+        util.write_integer(f, "<", GXList[i])
+        i += 1
     
 
 def WriteBMD(f, GXList, convertedData):
@@ -161,6 +188,20 @@ def WriteBMD(f, GXList, convertedData):
     util.write_integer(f, "<", curr_offs-model_size_offs)
     f.seek(0, 2)
     WriteMaterials(f) # TODO: MATERIALS
+    curr_offs = f.tell()
+    f.seek(vertexMesh_offs_offs, 0)
+    util.write_integer(f, "<", curr_offs-model_size_offs)
+    f.seek(0, 2)
+    WriteVertexMesh(f, GXList)
+    
+    curr_offs = f.tell()
+    
+    f.seek(model_size_offs, 0)
+    util.write_integer(f, "<", curr_offs - model_size_offs)
+    
+    f.seek(MDL0_size_offs, 0)
+    util.write_integer(f, "<", curr_offs-MDL0_size_offs)
+    f.seek(0, 2)
     
 
 def WriteFile(GXList, convertedData, filepath):
@@ -182,5 +223,10 @@ def WriteFile(GXList, convertedData, filepath):
     util.write_integer(f, "<", 0)
     
     WriteBMD(f, GXList, convertedData)
+    
+    curr_offs = f.tell()
+    f.seek(file_size_offs)
+    util.write_integer(f, "<", curr_offs)
+    f.seek(0,2)
     
     f.close()
