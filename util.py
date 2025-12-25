@@ -108,3 +108,27 @@ def write_byte(file: BinaryIO, endian: str, *value: int):
     file.write(pack(endian + str(len(value)) + "B", *value))
 
 
+def write_string_set_length(file: BinaryIO, value: str, length: int):
+    """Writes a string of at most a given length, and ensures padding up to that length
+    
+        Parameters
+        ----------
+        file : BinaryIO
+            The file to write to.
+
+        value : str
+            The bytes to write.
+        
+        length : int
+            The length the string should be written
+
+    """
+    if (len(value) >= length):
+        value = value[:length-1]
+    
+    file.write(value.encode('ascii'))
+    
+    writtenCount = len(value)
+    while writtenCount < length:
+        write_byte(file, "<", 0)
+        writtenCount += 1

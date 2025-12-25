@@ -1,39 +1,57 @@
 import bpy
 from . import util
 
-def WriteBones(f, convertedData):
-    boneCount = 0
-    # bone count
-    util.write_byte(f, 0)
-    util.write_byte(f, boneCount)
+class InfoBlock():
+    def __init__(self):
+        self.offsetOffsets = []
+        self.hashOffsets = []
+
+def WriteInfoBlock(f, itemCount, names):
+    infoOffsets = InfoBlock()
+    
+    util.write_byte(f, "<", 0)
+    util.write_byte(f, "<", itemCount)
     # header size
-    header_size_offs = f.tell()
+    headerSizeOffset = f.tell()
     util.write_short(f, "<", 0)
-    # this part size
+    # ?
     util.write_short(f, "<", 8)
     # offset to actual info ?
-    util.write_short(f, "<", 0xC+(4*boneCount))
+    util.write_short(f, "<", 0xC+(4*itemCount))
     # ?
     util.write_integer(f, "<", 0x17F)
-    # hashes?
+    # hashes...?
     i = 0
-    while i < boneCount:
+    while i < itemCount:
+        infoOffsets.hashOffsets.append(f.tell())
         util.write_integer(f, "<", 0)
         i += 1
-    # another size...
+    # more sizes?
     util.write_short(f, "<", 4)
-    util.write_short(f, "<", 4 + (4*boneCount))
-    bone_offses = []
+    util.write_short(f, "<", 4 + (4*itemCount))
     i = 0
-    while i < boneCount:
-        bone_offses.append(f.tell())
+    while i < itemCount:
+        infoOffsets.offsetOffsets.append(f.tell())
         util.write_integer(f, "<", 0)
         i += 1
-    # TODO: write names and bone info; names need to be 16 aligned
-    header_size = f.tell()-header_size_offs
-    f.seek(header_size_offs)
+    
+    # write names
+    i = 0
+    while i < itemCount:
+        util.write_string_set_length(f, names[i], 16)
+        i += 1
+    
+    # write header size
+    header_size = f.tell()-headerSizeOffset
+    f.seek(headerSizeOffset, 0)
     util.write_short(f, "<", header_size+2)
     f.seek(0, 2)
+    
+    return infoOffsets;
+
+def WriteBones(f, convertedData):
+    boneCount = 0
+    infoOffsets = WriteInfoBlock(f, boneCount, [])
 
 def WriteCommands(f, commands):
     i = 0
@@ -49,31 +67,10 @@ def WriteMaterials(f):
     palette_pairing_offs = f.tell()
     util.write_short(f, "<", 0)
     # same info block as bones use
-    util.write_byte(f, 0)
-    util.write_byte(f, materialCount) # material count
-    header_size_offs = f.tell()
-    util.write_short(f, 0) 
-    util.write_short(f, 8) # this part size
-    # offset to actual info ?
-    util.write_short(f, "<", 0xC+(4*materialCount))
-    # ?
-    util.write_integer(f, "<", 0x17F)
-    # hashes?
-    i = 0
-    while i < materialCount:
-        util.write_integer(f, "<", 0)
-        i += 1
-    
-    # another size
-    util.write_short(f, "<", 4)
-    util.write_short(f, "<", 4+(4*materialCount))
-    
-    material_offses = []
-    i = 0
-    while i < materialCount:
-        material_offses.append(f.tell())
-        util.write_integer(f, "<", 0)
-        i += 1
+    # temp
+    matNames = []
+    matNames.append("Material")
+    infoOffsets = WriteInfoBlock(f, materialCount, matNames)
     
 
 def WriteBMD(f, GXList, convertedData):
@@ -85,7 +82,7 @@ def WriteBMD(f, GXList, convertedData):
     util.write_short(f, "<", 1)
     # model offset, fill in later: relative to MDL0 size position in bytes
     model_offset_offs = f.tell()
-    util.write_short(f, "<", 8) # TODO: change if we add multiple meshes?
+    util.write_short(f, "<", 4) # TODO: change if we add multiple meshes?
     # model size
     model_size_offs = f.tell()
     util.write_integer(f, "<", 0)
@@ -139,7 +136,7 @@ def WriteBMD(f, GXList, convertedData):
     WriteCommands(f, convertedData.NSBCommands)
     curr_offs = f.tell()
     f.seek(material_offs_offs, 0)
-    util.write_integer(f, "<", curr_offs-material_offs_offs)
+    util.write_integer(f, "<", curr_offs-model_size_offs)
     f.seek(0, 2)
     WriteMaterials(f) # TODO: MATERIALS
     
