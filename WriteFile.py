@@ -72,6 +72,28 @@ def WriteMaterials(f):
     matNames.append("Material")
     infoOffsets = WriteInfoBlock(f, materialCount, matNames)
     
+    # write a dummy material
+    curr_offs = f.tell()
+    f.seek(infoOffsets.offsetOffsets[0], 0)
+    util.write_integer(f, "<", curr_offs - texture_pairing_offs) # curiously, the offsets stored are relative to the texture pairing offset/first value in materials in general?
+    f.seek(0, 2)
+    
+    # material outline:
+    util.write_short(f, "<", 0) # dummy
+    util.write_short(f, "<", 0x2C) # material length
+    util.write_integer(f, "<", 0) # DIF_AMB register
+    util.write_integer(f, "<", 0) # SPE_EMI register
+    util.write_integer(f, "<", 0) # POLYGON_ATTR value to be OR'd with
+    util.write_integer(f, "<", 0x3F1FF8FF) # POLYGON_ATTR value to be AND'd with to clear old values
+    util.write_integer(f, "<", 0) # TEXIMAGE_PARAM bit16-19 and 30-31: 16-19 are repeat type, 30-31 are transformation mode
+    util.write_integer(f, "<", 0xFFFFFFFF) # unknown
+    util.write_integer(f, "<", 0x1FCE0000) # unknown
+    util.write_short(f, "<", 0) # texture width
+    util.write_short(f, "<", 0) # texture height
+    util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point. a guess is texture matrix scale?
+    util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point
+    # note: gbatek implies a full texture matrix can be stored in here, but doesn't understand how or why. worth investigating
+    
 
 def WriteBMD(f, GXList, convertedData):
     util.write_integer(f, "<", 0x304C444D)
