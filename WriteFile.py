@@ -127,11 +127,15 @@ def WriteBMD(f, GXList, convertedData):
     # chunk size...fill in later...
     MDL0_size_offs = f.tell()
     util.write_integer(f, "<", 0)
-    # model count
-    util.write_short(f, "<", 1)
-    # model offset, fill in later: relative to MDL0 size position in bytes
-    model_offset_offs = f.tell()
-    util.write_short(f, "<", 4) # TODO: change if we add multiple meshes?
+    # i hate these info blocks
+    info_block_start = f.tell()
+    nameTest = []
+    nameTest.append("Model")
+    infoOffs = WriteInfoBlock(f, 1, nameTest)
+    curr_offs = f.tell()
+    f.seek(infoOffs.offsetOffsets[0], 0)
+    util.write_integer(f, "<", curr_offs-info_block_start)
+    f.seek(0, 2)
     # model size
     model_size_offs = f.tell()
     util.write_integer(f, "<", 0)
