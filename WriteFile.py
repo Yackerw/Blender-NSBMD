@@ -49,9 +49,20 @@ def WriteInfoBlock(f, itemCount, names):
     
     return infoOffsets;
 
-def WriteBones(f, convertedData):
-    boneCount = 0
-    infoOffsets = WriteInfoBlock(f, boneCount, [])
+def WriteNodes(f, convertedData):
+    nodeCount = 1
+    nodeNames = []
+    nodeNames.append("Model")
+    infoStart = f.tell()
+    infoOffsets = WriteInfoBlock(f, nodeCount, nodeNames)
+    curr_offs = f.tell()
+    f.seek(infoOffsets.offsetOffsets[0], 0)
+    util.write_integer(f, "<", curr_offs-infoStart)
+    f.seek(0, 2)
+    # write no transform
+    util.write_short(f, "<", 0x7)
+    # necessary short
+    util.write_short(f, "<", 0x1000)
 
 def WriteCommands(f, commands):
     i = 0
@@ -83,7 +94,7 @@ def WriteMaterials(f):
     util.write_short(f, "<", 0x2C) # material length
     util.write_integer(f, "<", 0) # DIF_AMB register
     util.write_integer(f, "<", 0) # SPE_EMI register
-    util.write_integer(f, "<", 0) # POLYGON_ATTR value to be OR'd with
+    util.write_integer(f, "<", 0x1F0000) # POLYGON_ATTR value to be OR'd with; 31 alpha
     util.write_integer(f, "<", 0x3F1FF8FF) # POLYGON_ATTR value to be AND'd with to clear old values
     util.write_integer(f, "<", 0) # TEXIMAGE_PARAM bit16-19 and 30-31: 16-19 are repeat type, 30-31 are transformation mode
     util.write_integer(f, "<", 0xFFFFFFFF) # unknown
@@ -93,6 +104,14 @@ def WriteMaterials(f):
     util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point. a guess is texture matrix scale?
     util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point
     # note: gbatek implies a full texture matrix can be stored in here, but doesn't understand how or why. worth investigating
+    
+    curr_offs = f.tell()
+    f.seek(texture_pairing_offs, 0)
+    util.write_short(f, "<", curr_offs-texture_pairing_offs)
+    util.write_short(f, "<", curr_offs-texture_pairing_offs)
+    f.seek(0, 2)
+    # :/
+    WriteInfoBlock(f, 0, [])
 
 def WriteVertexMesh(f, GXList):
     listStartOffs = f.tell()
@@ -134,7 +153,7 @@ def WriteBMD(f, GXList, convertedData):
     infoOffs = WriteInfoBlock(f, 1, nameTest)
     curr_offs = f.tell()
     f.seek(infoOffs.offsetOffsets[0], 0)
-    util.write_integer(f, "<", curr_offs-info_block_start)
+    util.write_integer(f, "<", (curr_offs-MDL0_size_offs)+4)
     f.seek(0, 2)
     # model size
     model_size_offs = f.tell()
@@ -156,13 +175,13 @@ def WriteBMD(f, GXList, convertedData):
     util.write_byte(f, "<", 0)
     util.write_byte(f, "<", 0)
     # bone count. fill out once we get bones!
-    util.write_byte(f, "<", 0)
+    util.write_byte(f, "<", 1)
     # material count
     util.write_byte(f, "<", 1)
     # vertexmesh count
     util.write_byte(f, "<", 1)
     # ? do bone count again?
-    util.write_short(f, "<", 0)
+    util.write_short(f, "<", 1)
     # scale factor
     util.write_integer(f, "<", convertedData.scaleX)
     util.write_integer(f, "<", int(16777216 / convertedData.scaleX))
@@ -180,7 +199,7 @@ def WriteBMD(f, GXList, convertedData):
     util.write_integer(f, "<", 4096)
     util.write_integer(f, "<", 4096)
     
-    WriteBones(f, convertedData)
+    WriteNodes(f, convertedData)
     
     curr_offs = f.tell()
     f.seek(render_list_offs, 0)
@@ -197,6 +216,11 @@ def WriteBMD(f, GXList, convertedData):
     util.write_integer(f, "<", curr_offs-model_size_offs)
     f.seek(0, 2)
     WriteVertexMesh(f, GXList)
+    #curr_offs = f.tell()
+    #f.seek(inverse_matrices_offs, 0)
+    #util.write_integer(f, "<", curr_offs-model_size_offs)
+    #f.seek(0,2)
+    #WriteInverseMatrices(f, convertedData)
     
     curr_offs = f.tell()
     
