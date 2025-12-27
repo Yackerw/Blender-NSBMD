@@ -83,6 +83,32 @@ def WriteMaterials(f):
     matNames.append("Material")
     infoOffsets = WriteInfoBlock(f, materialCount, matNames)
     
+    curr_offs = f.tell()
+    f.seek(texture_pairing_offs, 0)
+    util.write_short(f, "<", curr_offs-texture_pairing_offs)
+    f.seek(0, 2)
+    # :/
+    paletteNames = []
+    paletteNames.append("TestPalette")
+    texInfo = WriteInfoBlock(f, 1, paletteNames)
+    curr_offs = f.tell()
+    f.seek(texture_pairing_offs+2, 0)
+    util.write_short(f, "<", curr_offs-texture_pairing_offs)
+    f.seek(0, 2)
+    paletteInfo = WriteInfoBlock(f, 1, paletteNames)
+    curr_offs = f.tell()
+    curr_offs = f.tell()
+    f.seek(texInfo.offsetOffsets[0])
+    util.write_integer(f, "<", curr_offs-texture_pairing_offs | (1 << 16)) # 1 << 16 = count of items
+    f.seek(0, 2)
+    util.write_byte(f, "<", 0)
+    curr_offs = f.tell()
+    f.seek(paletteInfo.offsetOffsets[0])
+    util.write_integer(f, "<", curr_offs-texture_pairing_offs | (1 << 16)) # 1 << 16 = count of items
+    f.seek(0, 2)
+    util.write_byte(f, "<", 0)
+    util.write_aligned(f, 4)
+    
     # write a dummy material
     curr_offs = f.tell()
     f.seek(infoOffsets.offsetOffsets[0], 0)
@@ -104,14 +130,6 @@ def WriteMaterials(f):
     util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point. a guess is texture matrix scale?
     util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point
     # note: gbatek implies a full texture matrix can be stored in here, but doesn't understand how or why. worth investigating
-    
-    curr_offs = f.tell()
-    f.seek(texture_pairing_offs, 0)
-    util.write_short(f, "<", curr_offs-texture_pairing_offs)
-    util.write_short(f, "<", curr_offs-texture_pairing_offs)
-    f.seek(0, 2)
-    # :/
-    WriteInfoBlock(f, 0, [])
 
 def WriteVertexMesh(f, GXList):
     listStartOffs = f.tell()
