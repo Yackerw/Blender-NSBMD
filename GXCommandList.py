@@ -57,7 +57,7 @@ class GXWriter():
             diffX = arg1 - self.prevPosx
             diffY = arg2 - self.prevPosy
             diffZ = arg3 - self.prevPosz
-            if (abs(diffX) < 512 and abs(diffY) and abs(diffZ)):
+            if (abs(diffX) < 512 and abs(diffY) < 512 and abs(diffZ) < 512):
                 self.commands[self.commandInd] |= GXFIFOCommands.CMD_VTX_DIFF.value << commandShift
                 self.commands.append((diffX & 0x3FF) | ((diffY & 0x3FF) << 10) | ((diffZ & 0x3FF) << 20))
             else:
