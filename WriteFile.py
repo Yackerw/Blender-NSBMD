@@ -118,9 +118,9 @@ def WriteMaterials(f):
     # material outline:
     util.write_short(f, "<", 0) # dummy
     util.write_short(f, "<", 0x2C) # material length
-    util.write_integer(f, "<", 0) # DIF_AMB register
-    util.write_integer(f, "<", 0) # SPE_EMI register
-    util.write_integer(f, "<", 0x1F0000) # POLYGON_ATTR value to be OR'd with; 31 alpha
+    util.write_integer(f, "<", 0x7FFF7FFF) # DIF_AMB register
+    util.write_integer(f, "<", 0x7FFF7FFF) # SPE_EMI register
+    util.write_integer(f, "<", 0x1F0080) # POLYGON_ATTR value to be OR'd with; 31 alpha, front faces
     util.write_integer(f, "<", 0x3F1FF8FF) # POLYGON_ATTR value to be AND'd with to clear old values
     util.write_integer(f, "<", 0) # TEXIMAGE_PARAM bit16-19 and 30-31: 16-19 are repeat type, 30-31 are transformation mode
     util.write_integer(f, "<", 0xFFFFFFFF) # unknown
@@ -246,7 +246,7 @@ def WriteBMD(f, GXList, convertedData):
     util.write_integer(f, "<", curr_offs - model_size_offs)
     
     f.seek(MDL0_size_offs, 0)
-    util.write_integer(f, "<", curr_offs-MDL0_size_offs)
+    util.write_integer(f, "<", (curr_offs-MDL0_size_offs)+4)
     f.seek(0, 2)
     
 
