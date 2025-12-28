@@ -71,8 +71,8 @@ def WriteCommands(f, commands):
         i += 1
     util.write_aligned(f, 4)
 
-def WriteMaterials(f):
-    materialCount = 1
+def WriteMaterials(f, materials):
+    materialCount = len(materials)
     texture_pairing_offs = f.tell()
     util.write_short(f, "<", 0) # texture pairing offset
     palette_pairing_offs = f.tell()
@@ -80,7 +80,8 @@ def WriteMaterials(f):
     # same info block as bones use
     # temp
     matNames = []
-    matNames.append("Material")
+    for mat in materials:
+        matNames.append(mat.name)
     infoOffsets = WriteInfoBlock(f, materialCount, matNames)
     
     curr_offs = f.tell()
@@ -115,20 +116,22 @@ def WriteMaterials(f):
     util.write_integer(f, "<", curr_offs - texture_pairing_offs) # curiously, the offsets stored are relative to the texture pairing offset/first value in materials in general?
     f.seek(0, 2)
     
-    # material outline:
-    util.write_short(f, "<", 0) # dummy
-    util.write_short(f, "<", 0x2C) # material length
-    util.write_integer(f, "<", 0x7FFF7FFF) # DIF_AMB register
-    util.write_integer(f, "<", 0x7FFF7FFF) # SPE_EMI register
-    util.write_integer(f, "<", 0x1F0080) # POLYGON_ATTR value to be OR'd with; 31 alpha, front faces
-    util.write_integer(f, "<", 0x3F1FF8FF) # POLYGON_ATTR value to be AND'd with to clear old values
-    util.write_integer(f, "<", 0) # TEXIMAGE_PARAM bit16-19 and 30-31: 16-19 are repeat type, 30-31 are transformation mode
-    util.write_integer(f, "<", 0xFFFFFFFF) # unknown
-    util.write_integer(f, "<", 0x1FCE0000) # unknown
-    util.write_short(f, "<", 0) # texture width
-    util.write_short(f, "<", 0) # texture height
-    util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point. a guess is texture matrix scale?
-    util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point
+    for mat in materials:
+        util.write_short(f, "<", 0) # dummy
+        util.write_short(f, "<", 0x2C) # material length
+        util.write_integer(f, "<", mat.DIF_AMB) # DIF_AMB register
+        util.write_integer(f, "<", mat.SPE_EMI) # SPE_EMI register
+        util.write_integer(f, "<", mat.POLY_ATTR_OR) # POLYGON_ATTR value to be OR'd with; 31 alpha, front faces
+        util.write_integer(f, "<", mat.POLY_ATTR_MASK) # POLYGON_ATTR value to be AND'd with to clear old values
+        util.write_integer(f, "<", mat.TEXIMAGE_PARAMS) # TEXIMAGE_PARAM bit16-19 and 30-31: 16-19 are repeat type, 30-31 are transformation mode
+        util.write_integer(f, "<", 0xFFFFFFFF) # unknown
+        util.write_integer(f, "<", 0x1FCE0000) # unknown
+        util.write_short(f, "<", mat.tex_width) # texture width
+        util.write_short(f, "<", mat.tex_height) # texture height
+        util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point. a guess is texture matrix scale?
+        util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point
+    
+    
     # note: gbatek implies a full texture matrix can be stored in here, but doesn't understand how or why. worth investigating
 
 def WriteVertexMesh(f, GXList):
@@ -159,7 +162,7 @@ def WriteVertexMesh(f, GXList):
         i += 1
     
 
-def WriteBMD(f, GXList, convertedData):
+def WriteBMD(f, GXList, materials, convertedData):
     util.write_integer(f, "<", 0x304C444D)
     # chunk size...fill in later...
     MDL0_size_offs = f.tell()
@@ -228,7 +231,7 @@ def WriteBMD(f, GXList, convertedData):
     f.seek(material_offs_offs, 0)
     util.write_integer(f, "<", curr_offs-model_size_offs)
     f.seek(0, 2)
-    WriteMaterials(f) # TODO: MATERIALS
+    WriteMaterials(f, materials)
     curr_offs = f.tell()
     f.seek(vertexMesh_offs_offs, 0)
     util.write_integer(f, "<", curr_offs-model_size_offs)
@@ -250,7 +253,7 @@ def WriteBMD(f, GXList, convertedData):
     f.seek(0, 2)
     
 
-def WriteFile(GXList, convertedData, filepath):
+def WriteFile(GXList, convertedData, materials, filepath):
     f = open(filepath, "wb")
     # simple header stuff
     util.write_integer(f, "<", 0x30444d42)
@@ -268,7 +271,7 @@ def WriteFile(GXList, convertedData, filepath):
     # offset to TEX0
     util.write_integer(f, "<", 0)
     
-    WriteBMD(f, GXList, convertedData)
+    WriteBMD(f, GXList, materials, convertedData)
     
     curr_offs = f.tell()
     f.seek(file_size_offs)

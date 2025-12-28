@@ -3,6 +3,7 @@ import mathutils
 from . import DataConvert
 from . import GXCommandList
 from . import WriteFile
+from . import MaterialProcessing
 
 class NSVert:
     def __init__(self):
@@ -77,12 +78,16 @@ class ExportModel:
             bpy.context.window_manager.popup_menu(draw_func=draw, title="NSBMD Exporter", icon="ERROR")
             return {'CANCELLED'}
         
-        mesh = ProcessMesh(selected_obj.to_mesh(preserve_all_data_layers=True,depsgraph=bpy.context.evaluated_depsgraph_get()))
+        blenderMesh = selected_obj.to_mesh(preserve_all_data_layers=True,depsgraph=bpy.context.evaluated_depsgraph_get())
+        
+        mesh = ProcessMesh(blenderMesh)
         
         newConv = DataConvert.ConvertVerts(mesh.subModels[0].verts,False,64,64,True,0,0)
         
         GXList = GXCommandList.ConvertToGXList(newConv, mesh.subModels[0].tris, [], [])
         
-        WriteFile.WriteFile(GXList, newConv, self.filepath)
+        mats = MaterialProcessing.GetMaterialInfo(blenderMesh)
+        
+        WriteFile.WriteFile(GXList, newConv, mats, self.filepath)
 
         return{'FINISHED'}
