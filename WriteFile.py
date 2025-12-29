@@ -49,20 +49,46 @@ def WriteInfoBlock(f, itemCount, names):
     
     return infoOffsets;
 
-def WriteNodes(f, convertedData):
-    nodeCount = 1
+def WriteNodes(f, nodes):
+    nodeCount = len(nodes)
     nodeNames = []
-    nodeNames.append("Model")
+    for node in nodes:
+        nodeNames.append(node.name)
     infoStart = f.tell()
     infoOffsets = WriteInfoBlock(f, nodeCount, nodeNames)
-    curr_offs = f.tell()
-    f.seek(infoOffsets.offsetOffsets[0], 0)
-    util.write_integer(f, "<", curr_offs-infoStart)
-    f.seek(0, 2)
-    # write no transform
-    util.write_short(f, "<", 0x7)
-    # necessary short
-    util.write_short(f, "<", 0x1000)
+    i = 0
+    for node in nodes:
+        curr_offs = f.tell()
+        f.seek(infoOffsets.offsetOffsets[i], 0)
+        util.write_integer(f, "<", curr_offs-infoStart)
+        f.seek(0, 2)
+        
+        if node.validTransform == False:
+            # write no transform
+            util.write_short(f, "<", 0x7)
+            # necessary short
+            util.write_short(f, "<", 0x1000)
+        else:
+            flagValue = 0x4 # disable scale
+            if node.position.x == 0 and node.position.y == 0 and node.position.z == 0:
+                flagValue |= 0x1 # disable translation
+            # i'm not gonna bother with pivots tbh
+            if node.rotation[0][0] == 4096 and node.rotation[1][1] == 4096 and node.rotation[2][2] == 4096: # identity matrix
+                flagValue |= 0x2 # disable rotation
+            util.write_short(f, "<", flagValue)
+            util.write_signed_short(f, "<", int(node.rotation[0][0]))
+            if (flagValue & 0x1) == 0:
+                util.write_signed_integer(f, "<", int(node.position.x))
+                util.write_signed_integer(f, "<", int(node.position.y))
+                util.write_signed_integer(f, "<", int(node.position.z))
+            if (flagValue & 0x2) == 0:
+                for j in range(0,3):
+                    for k in range(0,3):
+                        if j == 0 and k == 0:
+                            continue
+                        util.write_signed_short(f, "<", int(node.rotation[k][j]))
+            
+        i += 1
 
 def WriteCommands(f, commands):
     i = 0
@@ -110,13 +136,12 @@ def WriteMaterials(f, materials):
     util.write_byte(f, "<", 0)
     util.write_aligned(f, 4)
     
-    # write a dummy material
-    curr_offs = f.tell()
-    f.seek(infoOffsets.offsetOffsets[0], 0)
-    util.write_integer(f, "<", curr_offs - texture_pairing_offs) # curiously, the offsets stored are relative to the texture pairing offset/first value in materials in general?
-    f.seek(0, 2)
-    
+    i = 0
     for mat in materials:
+        curr_offs = f.tell()
+        f.seek(infoOffsets.offsetOffsets[i], 0)
+        util.write_integer(f, "<", curr_offs - texture_pairing_offs) # curiously, the offsets stored are relative to the texture pairing offset/first value in materials in general?
+        f.seek(0, 2)
         util.write_short(f, "<", 0) # dummy
         util.write_short(f, "<", 0x2C) # material length
         util.write_integer(f, "<", mat.DIF_AMB) # DIF_AMB register
@@ -130,6 +155,7 @@ def WriteMaterials(f, materials):
         util.write_short(f, "<", mat.tex_height) # texture height
         util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point. a guess is texture matrix scale?
         util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point
+        i += 1
     
     
     # note: gbatek implies a full texture matrix can be stored in here, but doesn't understand how or why. worth investigating
@@ -160,9 +186,19 @@ def WriteVertexMesh(f, GXList):
     while i < len(GXList):
         util.write_integer(f, "<", GXList[i])
         i += 1
+
+def WriteInverseMatrices(f, nodes):
+    for node in nodes:
+        for i in range(0,4):
+            for j in range(0,3):
+                util.write_signed_integer(f, "<", int(node.inverseMatrix[j][i]))
+        # UPGRADE NOTE: if scale is added to bones, you will have to remove scale from this next matrix!
+        for i in range(0,3):
+            for j in range(0,3):
+                util.write_signed_integer(f, "<", int(node.inverseMatrix[j][i]))
     
 
-def WriteBMD(f, GXList, materials, convertedData):
+def WriteBMD(f, GXList, convertedData, materials, nodes):
     util.write_integer(f, "<", 0x304C444D)
     # chunk size...fill in later...
     MDL0_size_offs = f.tell()
@@ -196,13 +232,13 @@ def WriteBMD(f, GXList, materials, convertedData):
     util.write_byte(f, "<", 0)
     util.write_byte(f, "<", 0)
     # bone count. fill out once we get bones!
-    util.write_byte(f, "<", 1)
+    util.write_byte(f, "<", len(nodes))
     # material count
     util.write_byte(f, "<", 1)
     # vertexmesh count
     util.write_byte(f, "<", 1)
     # ? do bone count again?
-    util.write_short(f, "<", 1)
+    util.write_short(f, "<", len(nodes))
     # scale factor
     util.write_integer(f, "<", convertedData.scaleX)
     util.write_integer(f, "<", int(16777216 / convertedData.scaleX))
@@ -220,7 +256,7 @@ def WriteBMD(f, GXList, materials, convertedData):
     util.write_integer(f, "<", 4096)
     util.write_integer(f, "<", 4096)
     
-    WriteNodes(f, convertedData)
+    WriteNodes(f, nodes)
     
     curr_offs = f.tell()
     f.seek(render_list_offs, 0)
@@ -237,11 +273,11 @@ def WriteBMD(f, GXList, materials, convertedData):
     util.write_integer(f, "<", curr_offs-model_size_offs)
     f.seek(0, 2)
     WriteVertexMesh(f, GXList)
-    #curr_offs = f.tell()
-    #f.seek(inverse_matrices_offs, 0)
-    #util.write_integer(f, "<", curr_offs-model_size_offs)
-    #f.seek(0,2)
-    #WriteInverseMatrices(f, convertedData)
+    curr_offs = f.tell()
+    f.seek(inverse_matrices_offs, 0)
+    util.write_integer(f, "<", curr_offs-model_size_offs)
+    f.seek(0,2)
+    WriteInverseMatrices(f, nodes)
     
     curr_offs = f.tell()
     
@@ -253,7 +289,7 @@ def WriteBMD(f, GXList, materials, convertedData):
     f.seek(0, 2)
     
 
-def WriteFile(GXList, convertedData, materials, filepath):
+def WriteFile(GXList, convertedData, materials, nodes, filepath):
     f = open(filepath, "wb")
     # simple header stuff
     util.write_integer(f, "<", 0x30444d42)
@@ -271,7 +307,7 @@ def WriteFile(GXList, convertedData, materials, filepath):
     # offset to TEX0
     util.write_integer(f, "<", 0)
     
-    WriteBMD(f, GXList, materials, convertedData)
+    WriteBMD(f, GXList, convertedData, materials, nodes)
     
     curr_offs = f.tell()
     f.seek(file_size_offs)

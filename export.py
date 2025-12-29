@@ -4,6 +4,7 @@ from . import DataConvert
 from . import GXCommandList
 from . import WriteFile
 from . import MaterialProcessing
+from . import ArmatureProcessing
 
 class NSVert:
     def __init__(self):
@@ -78,6 +79,15 @@ class ExportModel:
             bpy.context.window_manager.popup_menu(draw_func=draw, title="NSBMD Exporter", icon="ERROR")
             return {'CANCELLED'}
         
+        nodes = None
+        
+        for mod in selected_obj.modifiers:
+            if mod.type == 'ARMATURE' and mod.object != None:
+                nodes = ArmatureProcessing.GetNodes(mod.object)
+        
+        if nodes == None:
+            nodes = ArmatureProcessing.GetBonelessNode(selected_obj)
+        
         blenderMesh = selected_obj.to_mesh(preserve_all_data_layers=True,depsgraph=bpy.context.evaluated_depsgraph_get())
         
         mesh = ProcessMesh(blenderMesh)
@@ -88,6 +98,6 @@ class ExportModel:
         
         mats = MaterialProcessing.GetMaterialInfo(blenderMesh)
         
-        WriteFile.WriteFile(GXList, newConv, mats, self.filepath)
+        WriteFile.WriteFile(GXList, newConv, mats, nodes, self.filepath)
 
         return{'FINISHED'}

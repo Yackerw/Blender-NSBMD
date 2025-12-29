@@ -71,6 +71,23 @@ def write_integer(file: BinaryIO, endian: str, *value: int):
     """
     file.write(pack(endian + str(len(value)) + "I", *value))
 
+def write_signed_integer(file: BinaryIO, endian: str, *value: int):
+    """Writes a tuple of integers to a file.
+
+        Parameters
+        ----------
+        file : BinaryIO
+            The file to write to.
+
+        endian :
+            Endian of what's being wrote.
+
+        value : tuple
+            The integers to write.
+
+    """
+    file.write(pack(endian + str(len(value)) + "i", *value))
+
 
 def write_short(file: BinaryIO, endian: str, *value: int):
     """Writes a tuple of shorts to a file.
@@ -88,6 +105,23 @@ def write_short(file: BinaryIO, endian: str, *value: int):
 
     """
     file.write(pack(endian + str(len(value)) + "H", *value))
+
+def write_signed_short(file: BinaryIO, endian: str, *value: int):
+    """Writes a tuple of shorts to a file.
+
+        Parameters
+        ----------
+        file : BinaryIO
+            The file to write to.
+
+        endian :
+            Endian of what's being wrote.
+
+        value : tuple
+            The shorts to write.
+
+    """
+    file.write(pack(endian + str(len(value)) + "h", *value))
 
 
 def write_byte(file: BinaryIO, endian: str, *value: int):
