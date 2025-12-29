@@ -160,32 +160,41 @@ def WriteMaterials(f, materials):
     
     # note: gbatek implies a full texture matrix can be stored in here, but doesn't understand how or why. worth investigating
 
-def WriteVertexMesh(f, GXList):
+def WriteVertexMesh(f, GXLists, mats):
     listStartOffs = f.tell()
-    meshNameDummy = []
-    meshNameDummy.append("Mesh")
-    infoOffs = WriteInfoBlock(f, 1, meshNameDummy)
-    curr_offs = f.tell()
-    f.seek(infoOffs.offsetOffsets[0], 0)
-    util.write_integer(f, "<", curr_offs-listStartOffs)
-    f.seek(0, 2)
-    
+    meshNames = []
+    for i in range(0,len(GXLists)):
+        meshNames.append(mats[i].name)
+    infoOffs = WriteInfoBlock(f, len(GXLists), meshNames)
     vertexMeshStart = f.tell()
-    util.write_short(f, "<", 0) # dummy
-    util.write_short(f, "<", 0x10) # ? size of segment?
-    util.write_integer(f, "<", 0xC) # ?? look into this value
-    GXListOffs = f.tell()
-    util.write_integer(f, "<", 0) # offset to GX command list
-    util.write_integer(f, "<", len(GXList)*4) # GX command list size
     
-    curr_offs = f.tell()
-    f.seek(GXListOffs, 0)
-    util.write_integer(f, "<", curr_offs-vertexMeshStart)
-    f.seek(0, 2)
-    i = 0
-    while i < len(GXList):
-        util.write_integer(f, "<", GXList[i])
-        i += 1
+    j = 0
+    GXListOffsets = []
+    for GXList in GXLists:
+        curr_offs = f.tell()
+        f.seek(infoOffs.offsetOffsets[j], 0)
+        util.write_integer(f, "<", curr_offs-listStartOffs)
+        f.seek(0, 2)
+        
+        util.write_short(f, "<", 0) # dummy
+        util.write_short(f, "<", 0x10) # ? size of segment?
+        util.write_integer(f, "<", 0xC) # ??
+        GXListOffsets.append(f.tell())
+        util.write_integer(f, "<", 0) # offset to GX command list
+        util.write_integer(f, "<", len(GXList)*4) # GX command list size
+        j += 1
+    
+    j = 0
+    for GXList in GXLists:
+        curr_offs = f.tell()
+        f.seek(GXListOffsets[j], 0)
+        util.write_integer(f, "<", (curr_offs-GXListOffsets[j])+0x8)
+        f.seek(0, 2)
+        i = 0
+        while i < len(GXList):
+            util.write_integer(f, "<", GXList[i])
+            i += 1
+        j += 1
 
 def WriteInverseMatrices(f, nodes):
     for node in nodes:
@@ -198,7 +207,7 @@ def WriteInverseMatrices(f, nodes):
                 util.write_signed_integer(f, "<", int(node.inverseMatrix[j][i]))
     
 
-def WriteBMD(f, GXList, convertedData, materials, nodes):
+def WriteBMD(f, GXLists, convertedData, materials, nodes):
     util.write_integer(f, "<", 0x304C444D)
     # chunk size...fill in later...
     MDL0_size_offs = f.tell()
@@ -272,7 +281,7 @@ def WriteBMD(f, GXList, convertedData, materials, nodes):
     f.seek(vertexMesh_offs_offs, 0)
     util.write_integer(f, "<", curr_offs-model_size_offs)
     f.seek(0, 2)
-    WriteVertexMesh(f, GXList)
+    WriteVertexMesh(f, GXLists, materials)
     curr_offs = f.tell()
     f.seek(inverse_matrices_offs, 0)
     util.write_integer(f, "<", curr_offs-model_size_offs)
@@ -289,7 +298,7 @@ def WriteBMD(f, GXList, convertedData, materials, nodes):
     f.seek(0, 2)
     
 
-def WriteFile(GXList, convertedData, materials, nodes, filepath):
+def WriteFile(GXLists, convertedData, materials, nodes, filepath):
     f = open(filepath, "wb")
     # simple header stuff
     util.write_integer(f, "<", 0x30444d42)
@@ -307,7 +316,7 @@ def WriteFile(GXList, convertedData, materials, nodes, filepath):
     # offset to TEX0
     util.write_integer(f, "<", 0)
     
-    WriteBMD(f, GXList, convertedData, materials, nodes)
+    WriteBMD(f, GXLists, convertedData, materials, nodes)
     
     curr_offs = f.tell()
     f.seek(file_size_offs)

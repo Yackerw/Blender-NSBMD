@@ -37,7 +37,7 @@ class NSBMDModelData():
         self.boundsHeight = 0
         self.boundsZWidth = 0
 
-def ConvertVerts(verts, useVertColors, textureResolutionX, textureResolutionY, maintainMatrix, materialInd, meshInd):
+def ConvertVerts(meshes, useVertColors, textureResolutionX, textureResolutionY, maintainMatrix, materialInd, meshInd):
     data = NSBMDModelData()
     
     data.usesColor = useVertColors
@@ -49,23 +49,25 @@ def ConvertVerts(verts, useVertColors, textureResolutionX, textureResolutionY, m
     vert_minY = 99999999
     vert_minZ = 99999999
     
-    i = 0
-    while (i < len(verts)):
-        curr_v = verts[i]
-        if (vert_maxX < curr_v.x):
-            vert_maxX = curr_v.x
-        if (vert_minX > curr_v.x):
-            vert_minX = curr_v.x
-        if (vert_maxY < curr_v.y):
-            vert_maxY = curr_v.y
-        if (vert_minY > curr_v.y):
-            vert_minY = curr_v.y
-        if (vert_maxZ < curr_v.z):
-            vert_maxZ = curr_v.z
-        if (vert_minZ > curr_v.z):
-            vert_minZ = curr_v.z
-        
-        i = i + 1
+    for mesh in meshes:
+        i = 0
+        verts = mesh.verts
+        while (i < len(verts)):
+            curr_v = verts[i]
+            if (vert_maxX < curr_v.x):
+                vert_maxX = curr_v.x
+            if (vert_minX > curr_v.x):
+                vert_minX = curr_v.x
+            if (vert_maxY < curr_v.y):
+                vert_maxY = curr_v.y
+            if (vert_minY > curr_v.y):
+                vert_minY = curr_v.y
+            if (vert_maxZ < curr_v.z):
+                vert_maxZ = curr_v.z
+            if (vert_minZ > curr_v.z):
+                vert_minZ = curr_v.z
+            
+            i = i + 1
     vert_centerX = (vert_maxX+vert_minX)/2
     vert_centerY = (vert_maxY+vert_minY)/2
     vert_centerZ = (vert_maxZ+vert_minZ)/2
@@ -77,7 +79,7 @@ def ConvertVerts(verts, useVertColors, textureResolutionX, textureResolutionY, m
     rescaleY = 1
     rescaleZ = 1
     
-    max_pos = 32767/8
+    max_pos = 32767/4096
     min_pos = -8
     
     """if vert_maxX > max_pos or vert_minX < min_pos:
@@ -120,33 +122,35 @@ def ConvertVerts(verts, useVertColors, textureResolutionX, textureResolutionY, m
     
     # convert verts
     
-    i = 0
-    while i < len(verts):
-        newVert = NSBMDDataVert()
-        cVert = verts[i]
-        if (useVertColors):
-            newVert.colr = round((cVert.colr / 255) * 31)
-            newVert.colg = round((cVert.colg / 255) * 31)
-            newVert.colb = round((cVert.colb / 255) * 31)
-            newVert.cola = round((cVert.cola / 255) * 31)
-        else:
-            newVert.normx = round(cVert.normx * 511)
-            newVert.normy = round(cVert.normy * 511)
-            newVert.normz = round(cVert.normz * 511)
-        newVert.x = round(((cVert.x + recenterX) / rescaleX) * 4096)
-        newVert.y = round(((cVert.y + recenterY) / rescaleY) * 4096)
-        newVert.z = round(((cVert.z + recenterZ) / rescaleZ) * 4096)
-        
-        newVert.u = round(cVert.u * 16 * textureResolutionX)
-        newVert.v = round(cVert.u * 16 * textureResolutionY)
-        
-        data.modelVerts.append(newVert)
-        
-        # TODO: WEIGHTS
-        i += 1
+    for mesh in meshes:
+        vertList = []
+        verts = mesh.verts
+        i = 0
+        while i < len(verts):
+            newVert = NSBMDDataVert()
+            cVert = verts[i]
+            if (useVertColors):
+                newVert.colr = round((cVert.colr / 255) * 31)
+                newVert.colg = round((cVert.colg / 255) * 31)
+                newVert.colb = round((cVert.colb / 255) * 31)
+                newVert.cola = round((cVert.cola / 255) * 31)
+            else:
+                newVert.normx = round(cVert.normx * 511)
+                newVert.normy = round(cVert.normy * 511)
+                newVert.normz = round(cVert.normz * 511)
+            newVert.x = round(((cVert.x + recenterX) / rescaleX) * 4096)
+            newVert.y = round(((cVert.y + recenterY) / rescaleY) * 4096)
+            newVert.z = round(((cVert.z + recenterZ) / rescaleZ) * 4096)
+            
+            newVert.u = round(cVert.u * 16 * textureResolutionX)
+            newVert.v = round(cVert.u * 16 * textureResolutionY)
+            
+            vertList.append(newVert)
+            
+            # TODO: WEIGHTS
+            i += 1
+        data.modelVerts.append(vertList)
     
-    data.NSBCommands.append(4)
-    data.NSBCommands.append(0)
     data.NSBCommands.append(2)
     data.NSBCommands.append(0)
     data.NSBCommands.append(1)
@@ -155,8 +159,11 @@ def ConvertVerts(verts, useVertColors, textureResolutionX, textureResolutionY, m
     data.NSBCommands.append(0)
     data.NSBCommands.append(0)
     data.NSBCommands.append(0xB)
-    data.NSBCommands.append(0x5)
-    data.NSBCommands.append(0)
+    for i in range(0,len(meshes)):
+        data.NSBCommands.append(0x4)
+        data.NSBCommands.append(i)
+        data.NSBCommands.append(0x5)
+        data.NSBCommands.append(i)
     data.NSBCommands.append(1) # END: TODO: handle this when writing so we cover all meshes
     
     return data

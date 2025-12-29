@@ -92,12 +92,18 @@ class ExportModel:
         
         mesh = ProcessMesh(blenderMesh)
         
-        newConv = DataConvert.ConvertVerts(mesh.subModels[0].verts,False,64,64,True,0,0)
+        newConv = DataConvert.ConvertVerts(mesh.subModels,False,64,64,True,0,0)
         
-        GXList = GXCommandList.ConvertToGXList(newConv, mesh.subModels[0].tris, [], [])
+        triList = []
+        quadList = []
+        for subMesh in mesh.subModels:
+            triList.append(subMesh.tris)
+            quadList.append([])
+        
+        GXLists = GXCommandList.ConvertToGXList(newConv, triList, quadList, False)
         
         mats = MaterialProcessing.GetMaterialInfo(blenderMesh)
         
-        WriteFile.WriteFile(GXList, newConv, mats, nodes, self.filepath)
+        WriteFile.WriteFile(GXLists, newConv, mats, nodes, self.filepath)
 
         return{'FINISHED'}
