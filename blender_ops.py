@@ -3,6 +3,7 @@ from bpy.props import StringProperty, EnumProperty, BoolProperty, IntProperty
 from bpy_extras.io_utils import ExportHelper
 import textwrap
 from . import export
+from .node_groups import MakeGroups
 
 
 class ExportNSBMD(bpy.types.Operator, ExportHelper):
@@ -68,4 +69,76 @@ class GetNSBMDTexture(bpy.types.Operator):
         for img, tex in zip(list(images), obj.data.nsbmd_textures):
             tex.texture = img
 
+        return {'FINISHED'}
+
+
+class NSBMDNodeAdd(bpy.types.Operator):
+    """Spawn in an NSBMD node"""
+    bl_idname = "node.add_node_nsbmd"
+    bl_label = "Node Add NSBMD Operator"
+
+    use_transform: BoolProperty(
+    )
+
+    type: StringProperty(
+    )
+
+    @classmethod
+    def poll(cls, context):
+        return context.area.ui_type == 'ShaderNodeTree'
+
+    def execute(self, context):
+        MakeGroups().execute()
+        bpy.ops.node.add_node(use_transform=self.use_transform, type=self.type)
+        return {'FINISHED'}
+
+
+class NodeNSBMDSetup(bpy.types.Operator):
+    """Spawn in a NSBMD node set up"""
+    bl_idname = "node.nsbmd_operator"
+    bl_label = "NSBMD Node Operator"
+
+    @classmethod
+    def poll(cls, context):
+        return context.area.ui_type == 'ShaderNodeTree'
+
+    def execute(self, context):
+        tree = context.space_data.node_tree
+        context.object.active_material.blend_method = "BLEND"
+        context.object.active_material.use_backface_culling = True
+        context.object.active_material.show_transparent_back = False
+
+        MakeGroups().execute()
+        existing_diffuse = False
+
+        node = tree.nodes.get("Image Texture")  # blender wants node name w/e
+        if node and node.image:
+            existing_diffuse = node.image
+        else:
+            for node in tree.nodes:
+                if node.bl_idname == "ShaderNodeTexImage" and node.image:
+                    existing_diffuse = node.image
+        for node in tree.nodes:
+            tree.nodes.remove(node)
+
+        shader = tree.nodes.new('ShaderNodeNSBMDShader')
+        shader.location = (10, 310)
+
+        node = tree.nodes.new("ShaderNodeOutputMaterial")
+        tree.links.new(node.inputs[0], shader.outputs[0])
+        node.location = (300, 300)
+
+        tree.links.new(node.inputs[0], shader.outputs[0])
+
+        image = tree.nodes.new(type="ShaderNodeTexImage")
+        image.location = (-400, 250)
+        '''vector = tree.nodes.new(type='ShaderNode' + model_end + 'NOVector')
+        vector.location = (-700, 10)
+        tree.links.new(image.inputs[0], vector.outputs[0])
+        '''
+        tree.links.new(shader.inputs["Texture Color"], image.outputs[0])
+        tree.links.new(shader.inputs["Texture Alpha"], image.outputs[1])
+
+        if existing_diffuse:
+            image.image = existing_diffuse
         return {'FINISHED'}

@@ -28,6 +28,9 @@ from bpy.app.handlers import persistent
 from . import blender_ops  # look i have a suspicion operators will make python crash out
 from . import blender_props
 from . import panels
+from . import node_groups
+from . import nodes
+from . import menus
 
 
 classes = [
@@ -36,14 +39,19 @@ classes = [
     panels.NSBMD_PT_About,
     panels.NSBMD_PT_Texture,
     blender_ops.ExportNSBMD,
+    menus.NSBMD_MT_Node_Add,
+    blender_ops.NSBMDNodeAdd,
+    blender_ops.NodeNSBMDSetup,
 ]
+
+classes += nodes.classes
 
 
 # register
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    #bpy.types.NODE_MT_add.append(menus.my_node_menu)
+    bpy.types.NODE_MT_add.append(menus.nsbmd_node_menu)
     bpy.types.TOPBAR_MT_file_export.append(blender_ops.menu_func_export)
     blender_props.custom_reg()
 
@@ -51,15 +59,15 @@ def register():
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-    #bpy.types.NODE_MT_add.remove(menus.my_node_menu)
+    bpy.types.NODE_MT_add.remove(menus.nsbmd_node_menu)
     bpy.types.TOPBAR_MT_file_export.remove(blender_ops.menu_func_export)
     blender_props.custom_unreg()
 
-# for when nodegroups are real
-'''@persistent
+
+@persistent
 def make_node_groups(scene):
-    MakeGroups().execute()
+    node_groups.MakeGroups().execute()
 
 
-bpy.app.handlers.load_post.append(make_node_groups)'''
+bpy.app.handlers.load_post.append(make_node_groups)
 
