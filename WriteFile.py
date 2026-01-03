@@ -4,7 +4,86 @@ from . import util
 class InfoBlock():
     def __init__(self):
         self.offsetOffsets = []
-        self.hashOffsets = []
+
+class TreeNode():
+    def __init__(self):
+        self.bit = 0
+        self.left = 0
+        self.right = 0
+
+def ExtractBit(bitIndex,byteArray):
+    currByteIndex = int(bitIndex/8)
+    currBitIndex = bitIndex % 8
+    if (currByteIndex >= len(byteArray)):
+        return 0
+    return (byteArray[currByteIndex] >> currBitIndex) & 1
+
+def FindPatriciaBit(names,testName,dontTestList):
+    for i in range(0,127):
+        currBit = ExtractBit(i, testName)
+        for j in range(0,len(names)):
+            if dontTestList[j] == True:
+                continue
+            currName = names[j]
+            otherBit = ExtractBit(i, currName)
+            if otherBit != currBit:
+                for k in range(0,len(names)):
+                    if dontTestList[k] == True or k==j:
+                        continue
+                    currName = names[k]
+                    otherBit2 = ExtractBit(i, currName)
+                    if otherBit2 != otherBit:
+                        if (otherBit2 == 0):
+                            return i,k,j
+                        else:
+                            return i,j,k
+    # we failed to find a good two way split, just make one
+    for i in range(0,127):
+        currBit = ExtractBit(i, testName)
+        for j in range(0,len(names)):
+            if dontTestList[j] == True:
+                continue
+            currName = names[j]
+            otherBit = ExtractBit(i, currName)
+            if otherBit != currBit:
+                if otherBit == 0:
+                    return i,j,-1
+                else:
+                    return i,-1,j
+    return 0, -1, -1 # MUST be the end of the tree
+
+def CreatePatriciaTree(names):
+    for i in range(0,len(names)):
+        name = names[i]
+        for j in range(i+1,len(names)):
+            name2 = names[j]
+            if name==name2:
+                # identical name!
+                def draw(self, context):
+                    self.layout.label(text="Two identical names were found in tree generation! Check your bones, textures, and materials for duplicate names.")
+                bpy.context.window_manager.popup_menu(draw_func=draw, title="NSBMD Exporter", icon="ERROR")
+                raise Exception("Invalid patricia tree")
+                
+    patricia = []
+    newNames = []
+    foundNames = []
+    for i in range(0,len(names)):
+        foundNames.append(False)
+        currName = names[i]
+        if (len(currName) >= 16):
+            currName = currName[:15]
+        newNames.append(currName.encode('ascii'))
+    for i in range(0,len(names)):
+        foundNames[i] = True
+        bit,left,right = FindPatriciaBit(newNames,newNames[i],foundNames)
+        newNode = TreeNode()
+        newNode.bit = bit
+        newNode.left = left
+        newNode.right = right
+        patricia.append(newNode)
+        foundNames[left] = True
+        foundNames[right] = True
+    return patricia
 
 def WriteInfoBlock(f, itemCount, names):
     infoOffsets = InfoBlock()
@@ -20,11 +99,14 @@ def WriteInfoBlock(f, itemCount, names):
     util.write_short(f, "<", 0xC+(4*itemCount))
     # ?
     util.write_integer(f, "<", 0x17F)
-    # hashes...?
+    # patricia tree
+    patricia = CreatePatriciaTree(names)
     i = 0
     while i < itemCount:
-        infoOffsets.hashOffsets.append(f.tell())
-        util.write_integer(f, "<", 0)
+        util.write_byte(f, "<", patricia[i].bit)
+        util.write_byte(f, "<", patricia[i].left+1)
+        util.write_byte(f, "<", patricia[i].right+1)
+        util.write_byte(f, "<", i)
         i += 1
     # more sizes?
     util.write_short(f, "<", 4)
