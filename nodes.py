@@ -166,6 +166,83 @@ class ShaderNodeNSBMDShader(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
         self["frontface"] = True
 
 
+class ShaderNodeNSBMDVector(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
+    bl_label = "NSBMD Vector"
+    bl_idname = "ShaderNodeNSBMDVector"
+    bl_width_default = 180
+
+    def transform_modes(self, context):
+        mix_types = (
+            ('NONE', "None", "UV Transform without a transform matrix"),
+            ('.NSBMD_VECTOR_UV', "UV", ""),
+            ('.NSBMD_VECTOR_NORMAL', "Normal", ""),
+            ('.NSBMD_VECTOR_POSITION', "Position", ""),
+        )
+        return mix_types
+
+    def u_types(self, context):
+        wrap_types = (
+            ('0', "Clamp U", ""),
+            ('1', "Repeat U", ""),
+            ('2', "Mirror U", ""),
+        )
+        return wrap_types
+
+    def v_types(self, context):
+        wrap_types = (
+            ('0', "Clamp V", ""),
+            ('1', "Repeat V", ""),
+            ('2', "Mirror V", ""),
+        )
+        return wrap_types
+
+    def copy(self, node):
+        self.node_tree = node.node_tree
+
+    def free(self):
+        pass  # defining this so blender doesn't try to remove the group
+
+    def update_mode(self, context):
+        if not self.transform_mode:
+            self.transform_mode = self.transform_modes(context)[1][0]
+
+        if self.transform_mode == 'NONE':
+            self.node_tree = bpy.data.node_groups[self.transform_modes(context)[1][0]]
+            self.inputs["UV Offset"].hide = True
+            self.inputs["UV Rotation"].hide = True
+            self.inputs["UV Scale"].hide = True
+        else:
+            self.node_tree = bpy.data.node_groups[self.transform_mode]
+            self.inputs["UV Offset"].hide = False
+            self.inputs["UV Rotation"].hide = False
+            self.inputs["UV Scale"].hide = False
+
+    def update_u(self, context):
+        if not self.u_type:
+            self.u_type = self.u_types(context)[1][0]
+
+        self.inputs["U"].default_value = int(self.u_type)
+
+    def update_v(self, context):
+        if not self.v_type:
+            self.v_type = self.v_types(context)[1][0]
+
+        self.inputs["V"].default_value = int(self.v_type)
+
+    u_type: EnumProperty(name="U Wrapping", update=update_u, items=u_types)
+    v_type: EnumProperty(name="V Wrapping", update=update_v, items=v_types)
+    transform_mode: EnumProperty(name="Transform Mode", update=update_mode, items=transform_modes)
+
+    def init(self, context):
+        self.node_tree = bpy.data.node_groups['.NSBMD_VECTOR_UV']
+        self.transform_mode = self.transform_modes(context)[1][0]
+        self.u_type = self.u_types(context)[1][0]
+        self.v_type = self.v_types(context)[1][0]
+        self.inputs["U"].hide = True
+        self.inputs["V"].hide = True
+
+
 classes = (
     ShaderNodeNSBMDShader,
+    ShaderNodeNSBMDVector,
 )

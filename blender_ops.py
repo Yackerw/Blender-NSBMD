@@ -132,10 +132,11 @@ class NodeNSBMDSetup(bpy.types.Operator):
 
         image = tree.nodes.new(type="ShaderNodeTexImage")
         image.location = (-400, 250)
-        '''vector = tree.nodes.new(type='ShaderNode' + model_end + 'NOVector')
-        vector.location = (-700, 10)
+
+        vector = tree.nodes.new(type='ShaderNodeNSBMDVector')
+        vector.location = (-700, 200)
         tree.links.new(image.inputs[0], vector.outputs[0])
-        '''
+
         tree.links.new(shader.inputs["Texture Color"], image.outputs[0])
         tree.links.new(shader.inputs["Texture Alpha"], image.outputs[1])
 
