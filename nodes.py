@@ -102,18 +102,24 @@ class ShaderNodeNSBMDShader(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
 
     def lighting_modes(self, context):
         blend_types = (
-            ('.NSBMD_SHADER_MULTI', "Multiply", ""),
-            ('.NSBMD_SHADER_DECAL', "Decal", ""),
-            ('.NSBMD_SHADER_TOON', "Toon / Highlight", "Depends on the game"),
-            ('.NSBMD_SHADER_MULTI', "Shadow", ""),
+            ('0', "Multiply", ""),
+            ('1', "Decal", ""),
+            ('2', "Toon / Highlight", "Depends on the game"),
+            ('3', "Shadow", ""),
         )
         return blend_types
 
     def update_lighting_modes(self, context):
         if not self.lighting_mode:
             self.lighting_mode = self.lighting_modes(context)[0][0]
+        blend_types = {
+            "0": '.NSBMD_SHADER_MULTI',
+            "1": '.NSBMD_SHADER_DECAL',
+            "2": '.NSBMD_SHADER_TOON',
+            "3": '.NSBMD_SHADER_MULTI',
+        }
 
-        self.node_tree = bpy.data.node_groups[self.lighting_mode]
+        self.node_tree = bpy.data.node_groups[blend_types[self.lighting_mode]]
 
     def update_facing(self, context):
         curr_mat = _get_material(self)
@@ -127,8 +133,6 @@ class ShaderNodeNSBMDShader(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
     def draw_buttons(self, context, layout):
         ignore = {'Advanced', 'Lighting Mode', 'Draw Backface', 'Draw Frontface', 'Polygon ID'}
         _shader_ui_common(self, ignore, layout, {5, 8})
-
-        row = layout.row(align=True)
 
         layout.prop(self, 'lighting_mode', text="")
         layout.prop(self, 'backface')
@@ -145,6 +149,7 @@ class ShaderNodeNSBMDShader(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
     frontface: BoolProperty(name="Draw Frontface", default=True, options=set(), update=update_facing)
     polygon_id: IntProperty(name='Polygon ID', default=0, min=0, max=63)
 
+    use_spec_table: BoolProperty(name="Use Specular Table", default=False, options=set())
     write_depth_transparent: BoolProperty(name="Write Depth Transparent", default=False, options=set())
     far_plane_clip: BoolProperty(name="Render if Clip FarPlane", default=True, options=set())
     one_dot_polygons: BoolProperty(name="Render if occupies <1 pixel", default=False, options=set())
@@ -173,10 +178,10 @@ class ShaderNodeNSBMDVector(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
 
     def transform_modes(self, context):
         mix_types = (
-            ('NONE', "None", "UV Transform without a transform matrix"),
-            ('.NSBMD_VECTOR_UV', "UV", ""),
-            ('.NSBMD_VECTOR_NORMAL', "Normal", ""),
-            ('.NSBMD_VECTOR_POSITION', "Position", ""),
+            ('0', "None", "UV Transform without a transform matrix"),
+            ('1', "UV", ""),
+            ('2', "Normal", ""),
+            ('3', "Position", ""),
         )
         return mix_types
 
@@ -205,14 +210,19 @@ class ShaderNodeNSBMDVector(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
     def update_mode(self, context):
         if not self.transform_mode:
             self.transform_mode = self.transform_modes(context)[1][0]
+        mix_types = {
+            "0": '.NSBMD_VECTOR_UV',
+            "1": '.NSBMD_VECTOR_UV',
+            "2": '.NSBMD_VECTOR_NORMAL',
+            "3": '.NSBMD_VECTOR_POSITION',
+        }
+        self.node_tree = bpy.data.node_groups[mix_types[self.transform_mode]]
 
-        if self.transform_mode == 'NONE':
-            self.node_tree = bpy.data.node_groups[self.transform_modes(context)[1][0]]
+        if self.transform_mode == '0':
             self.inputs["UV Offset"].hide = True
             self.inputs["UV Rotation"].hide = True
             self.inputs["UV Scale"].hide = True
         else:
-            self.node_tree = bpy.data.node_groups[self.transform_mode]
             self.inputs["UV Offset"].hide = False
             self.inputs["UV Rotation"].hide = False
             self.inputs["UV Scale"].hide = False
