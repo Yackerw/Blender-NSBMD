@@ -34,6 +34,15 @@ class NSModel:
 
 def ProcessMesh(mesh):
     NSMesh = NSModel()
+    import bmesh
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bm.faces.ensure_lookup_table()
+    faces = [f for f in bm.faces if len(f.verts) > 4]
+    bmesh.ops.triangulate(bm, faces=faces, quad_method='BEAUTY', ngon_method='BEAUTY')
+    bm.to_mesh(mesh)
+    bm.free()
+
     for matId in range(0,len(mesh.materials)):
         vertTuples = {}
         subMesh = NSSubModel()
@@ -69,8 +78,6 @@ class ExportModel:
         self.filepath = filepath
 
     def execute(self):
-        # code to get armatures if people selected meshes
-        arma_list = []
         selected_obj = bpy.context.active_object
         
         if (selected_obj.type != "MESH"):
