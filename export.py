@@ -25,6 +25,7 @@ class NSSubModel:
     def __init__(self):
         self.verts = []
         self.tris = []
+        self.quads = []
         self.matId = 0
 
 class NSModel:
@@ -48,7 +49,7 @@ def ProcessMesh(mesh):
         subMesh = NSSubModel()
         for face in mesh.polygons:
             if face.material_index == matId:
-                for loop_ind in range(face.loop_start, face.loop_start+3):
+                for loop_ind in range(face.loop_start, face.loop_start+face.loop_total):
                     newVert = NSVert()
                     loop = mesh.loops[loop_ind]
                     newVert.x = mesh.vertices[loop.vertex_index].undeformed_co.x
@@ -67,9 +68,15 @@ def ProcessMesh(mesh):
                     if not vertAsTuple in vertTuples:
                         subMesh.verts.append(newVert)
                         vertTuples[vertAsTuple] = len(subMesh.verts)-1
-                        subMesh.tris.append(len(subMesh.verts)-1)
+                        if (face.loop_total == 3):
+                            subMesh.tris.append(len(subMesh.verts)-1)
+                        else:
+                            subMesh.quads.append(len(subMesh.verts)-1)
                     else:
-                        subMesh.tris.append(vertTuples[vertAsTuple])
+                        if (face.loop_total == 3):
+                            subMesh.tris.append(vertTuples[vertAsTuple])
+                        else:
+                            subMesh.quads.append(vertTuples[vertAsTuple])
         NSMesh.subModels.append(subMesh)
     return NSMesh
 
@@ -107,7 +114,7 @@ class ExportModel:
         quadList = []
         for subMesh in mesh.subModels:
             triList.append(subMesh.tris)
-            quadList.append([])
+            quadList.append(subMesh.quads)
         
         GXLists = GXCommandList.ConvertToGXList(newConv, triList, quadList, False)
         
