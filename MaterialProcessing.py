@@ -11,6 +11,7 @@ class NSBMaterial():
         self.tex_height = 0
         self.name = "Material"
         self.use_vcol = False
+        self.texture_name = "Texture"
 
 
 def GetMaterialInfo(model):
@@ -34,6 +35,8 @@ def GetMaterialInfo(model):
             if node.bl_idname == "ShaderNodeNSBMDShader":
                 shader_node = node
                 break
+        texture_node = to_socket_from_socket.get(shader_node.inputs['Texture Color']).node
+        vector_node = to_socket_from_socket.get(shader_node.inputs[0]).node
 
         newMat = NSBMaterial()
         lightEnable = {}
@@ -90,11 +93,11 @@ def GetMaterialInfo(model):
         
         newMat.SPE_EMI = specDS | (emiDS << 16) | (useSpecTable << 15)
         
-        newMat.tex_width = 32
-        newMat.tex_height = 32
+        newMat.tex_width, newMat.tex_height = texture_node.image.size
+        newMat.texture_name = texture_node.image.name
         
-        texRepeatModeU = 1 # clamp, repeat, mirror
-        texRepeatModeV = 1
+        texRepeatModeU = vector_node.u_type # clamp, repeat, mirror
+        texRepeatModeV = vector_node.v_type
         
         repeatModeUDS = texRepeatModeU
         repeatModeVDS = texRepeatModeV
@@ -103,7 +106,7 @@ def GetMaterialInfo(model):
         if texRepeatModeV == 2:
             repeatModeVDS = 5
         
-        texTransformMode = 1 # none, UV, normal, position
+        texTransformMode = vector_node.transform_mode # none, UV, normal, position
         
         newMat.TEXIMAGE_PARAMS = (repeatModeUDS << 16) | (repeatModeVDS << 17) | (texTransformMode << 30)
         
