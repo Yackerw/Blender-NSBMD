@@ -20,6 +20,7 @@ class NSVert:
         self.cola = 0
         self.u = 0
         self.v = 0
+        self.weights = ()
 
 class NSSubModel:
     def __init__(self):
@@ -33,7 +34,7 @@ class NSModel:
         self.subModels = []
         
 
-def ProcessMesh(mesh):
+def ProcessMesh(mesh, obj):
     NSMesh = NSModel()
     import bmesh
     bm = bmesh.new()
@@ -63,8 +64,11 @@ def ProcessMesh(mesh):
                         newVert.u = uv.x
                         newVert.v = uv.y
                         break
+
+                    weights = tuple([(obj.vertex_groups[group.group].name, group.weight) for group in mesh.vertices[loop.vertex_index].groups[::]])
+                    newVert.weights = weights
                     
-                    vertAsTuple = ((newVert.x,newVert.y,newVert.z),(newVert.normx,newVert.normy,newVert.normz),(newVert.u,newVert.v))
+                    vertAsTuple = ((newVert.x,newVert.y,newVert.z),(newVert.normx,newVert.normy,newVert.normz),(newVert.u,newVert.v), weights)
                     if not vertAsTuple in vertTuples:
                         subMesh.verts.append(newVert)
                         vertTuples[vertAsTuple] = len(subMesh.verts)-1
@@ -104,7 +108,7 @@ class ExportModel:
         
         blenderMesh = selected_obj.to_mesh(preserve_all_data_layers=True,depsgraph=bpy.context.evaluated_depsgraph_get())
         
-        mesh = ProcessMesh(blenderMesh)
+        mesh = ProcessMesh(blenderMesh, selected_obj)
 
         mats = MaterialProcessing.GetMaterialInfo(blenderMesh)
         
