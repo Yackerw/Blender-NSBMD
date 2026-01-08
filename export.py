@@ -98,8 +98,10 @@ class ExportModel:
         blenderMesh = selected_obj.to_mesh(preserve_all_data_layers=True,depsgraph=bpy.context.evaluated_depsgraph_get())
         
         mesh = ProcessMesh(blenderMesh)
+
+        mats = MaterialProcessing.GetMaterialInfo(blenderMesh)
         
-        newConv = DataConvert.ConvertVerts(mesh.subModels,False,64,64,True,0,0)
+        newConv = DataConvert.ConvertVerts(mesh.subModels, mats)
         
         triList = []
         quadList = []
@@ -108,8 +110,6 @@ class ExportModel:
             quadList.append([])
         
         GXLists = GXCommandList.ConvertToGXList(newConv, triList, quadList, False)
-        
-        mats = MaterialProcessing.GetMaterialInfo(blenderMesh)
         
         WriteFile.WriteFile(GXLists, newConv, mats, nodes, self.filepath)
 

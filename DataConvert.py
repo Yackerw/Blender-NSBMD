@@ -37,10 +37,9 @@ class NSBMDModelData():
         self.boundsHeight = 0
         self.boundsZWidth = 0
 
-def ConvertVerts(meshes, useVertColors, textureResolutionX, textureResolutionY, maintainMatrix, materialInd, meshInd):
+
+def ConvertVerts(meshes, materials):
     data = NSBMDModelData()
-    
-    data.usesColor = useVertColors
     
     vert_maxX = -99999999
     vert_maxY = -99999999
@@ -49,7 +48,7 @@ def ConvertVerts(meshes, useVertColors, textureResolutionX, textureResolutionY, 
     vert_minY = 99999999
     vert_minZ = 99999999
     
-    for mesh in meshes:
+    for mesh, mat in zip(meshes, materials):
         i = 0
         verts = mesh.verts
         while (i < len(verts)):
@@ -129,7 +128,7 @@ def ConvertVerts(meshes, useVertColors, textureResolutionX, textureResolutionY, 
         while i < len(verts):
             newVert = NSBMDDataVert()
             cVert = verts[i]
-            if (useVertColors):
+            if (mat.use_vcol):
                 newVert.colr = round((cVert.colr / 255) * 31)
                 newVert.colg = round((cVert.colg / 255) * 31)
                 newVert.colb = round((cVert.colb / 255) * 31)
@@ -142,8 +141,8 @@ def ConvertVerts(meshes, useVertColors, textureResolutionX, textureResolutionY, 
             newVert.y = round(((cVert.y + recenterY) / rescaleY) * 4096)
             newVert.z = round(((cVert.z + recenterZ) / rescaleZ) * 4096)
             
-            newVert.u = round(cVert.u * 16 * textureResolutionX)
-            newVert.v = round(cVert.u * 16 * textureResolutionY)
+            newVert.u = round(cVert.u * 16 * mat.tex_width)
+            newVert.v = round(cVert.v * 16 * mat.tex_height)
             
             vertList.append(newVert)
             
