@@ -11,9 +11,9 @@ class ExportNSBMD(bpy.types.Operator, ExportHelper):
     bl_idname = "export.nsbmd"
     bl_label = "Export NSBMD Model"
     bl_options = {'REGISTER', 'UNDO'}
-    filename_ext = ""
+    filename_ext = ".nsbmd"
     filter_glob: StringProperty(
-        default="",
+        default=".nsbmd",
         options={'HIDDEN'},
         maxlen=255)
 
