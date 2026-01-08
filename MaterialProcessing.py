@@ -35,8 +35,16 @@ def GetMaterialInfo(model):
             if node.bl_idname == "ShaderNodeNSBMDShader":
                 shader_node = node
                 break
-        texture_node = to_socket_from_socket.get(shader_node.inputs['Texture Color']).node
-        vector_node = to_socket_from_socket.get(shader_node.inputs[0]).node
+        if not shader_node:
+            raise ReferenceError("Can't find NSBMD Shader Node in material " + mat.name)
+        texture_node = to_socket_from_socket.get(shader_node.inputs[5])
+        if not texture_node:
+            raise ReferenceError("Can't find Texture Node in material " + mat.name)
+        texture_node = texture_node.node
+        vector_node = to_socket_from_socket.get(texture_node.inputs[0])
+        if not vector_node:
+            raise ReferenceError("Can't find Vector Node in material " + mat.name)
+        vector_node = vector_node.node
 
         newMat = NSBMaterial()
         lightEnable = {}
@@ -92,12 +100,14 @@ def GetMaterialInfo(model):
         emiDS = (emiR >> 3) | ((emiG >> 3) << 5) | ((emiB >> 3) << 10)
         
         newMat.SPE_EMI = specDS | (emiDS << 16) | (useSpecTable << 15)
-        
+
+        if not texture_node.image:
+            raise ReferenceError("Please add Image to Texture Node in material " + mat.name)
         newMat.tex_width, newMat.tex_height = texture_node.image.size
         newMat.texture_name = texture_node.image.name
         
-        texRepeatModeU = vector_node.u_type # clamp, repeat, mirror
-        texRepeatModeV = vector_node.v_type
+        texRepeatModeU = int(vector_node.u_type) # clamp, repeat, mirror
+        texRepeatModeV = int(vector_node.v_type)
         
         repeatModeUDS = texRepeatModeU
         repeatModeVDS = texRepeatModeV
@@ -106,7 +116,7 @@ def GetMaterialInfo(model):
         if texRepeatModeV == 2:
             repeatModeVDS = 5
         
-        texTransformMode = vector_node.transform_mode # none, UV, normal, position
+        texTransformMode = int(vector_node.transform_mode) # none, UV, normal, position
         
         newMat.TEXIMAGE_PARAMS = (repeatModeUDS << 16) | (repeatModeVDS << 17) | (texTransformMode << 30)
         
