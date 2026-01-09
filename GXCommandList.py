@@ -27,9 +27,9 @@ class GXWriter():
         self.commands = []
         self.prevUV = 0.5 # we pass in ints, 0.5 for uninitialized
         self.prevNorm = 0.5
-        self.prevPosx = 0.5
-        self.prevPosy = 0.5
-        self.prevPosz = 0.5
+        self.prevPosx = 0xFFFFFF
+        self.prevPosy = 0xFFFFFF
+        self.prevPosz = 0xFFFFFF
         self.prevColor = 0.5
         self.prevMtx = -1
         self.prevColor = 0.5
@@ -100,9 +100,9 @@ class GXWriter():
         if cmd == GXCommands.CMD_TRI.value or cmd == GXCommands.CMD_TRISTRIP.value or cmd == GXCommands.CMD_QUAD.value or cmd == GXCommands.CMD_QUADSTRIP.value:
             self.prevUV = 0.5 # we pass in ints, 0.5 for uninitialized
             self.prevNorm = 0.5
-            self.prevPosx = 0.5
-            self.prevPosy = 0.5
-            self.prevPosz = 0.5
+            self.prevPosx = 0xFFFFFF
+            self.prevPosy = 0xFFFFFF
+            self.prevPosz = 0xFFFFFF
             self.prevColor = 0.5
             self.prevMtx = -1
             self.prevColor = 0.5
@@ -113,16 +113,16 @@ class GXWriter():
             self.commandInd = len(self.commands)
             self.commands.append(0)
 
-def ConvertToGXList(convData, triLists, quadLists, useColor):
+def ConvertToGXList(convData, useColor):
     
     retValue = []
     for j in range(0,len(convData.modelVerts)):
-        vertList = convData.modelVerts[j]
+        vertList = convData.modelVerts[j].verts
     
         GXList = GXWriter()
         
-        triList = triLists[j]
-        quadList = quadLists[j]
+        triList = convData.modelVerts[j].tris
+        quadList = convData.modelVerts[j].quads
         
         i = 0
         # TODO: strips

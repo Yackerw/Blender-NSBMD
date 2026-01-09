@@ -104,7 +104,9 @@ class ExportModel:
                 nodes = ArmatureProcessing.GetNodes(mod.object)
         
         if nodes == None:
-            nodes = ArmatureProcessing.GetBonelessNode(selected_obj)
+            nodes = []
+        
+        nodes.append(ArmatureProcessing.GetBonelessNode(selected_obj))
         
         blenderMesh = selected_obj.to_mesh(preserve_all_data_layers=True,depsgraph=bpy.context.evaluated_depsgraph_get())
         
@@ -114,13 +116,7 @@ class ExportModel:
         
         newConv = DataConvert.ConvertVerts(mesh.subModels, mats)
         
-        triList = []
-        quadList = []
-        for subMesh in mesh.subModels:
-            triList.append(subMesh.tris)
-            quadList.append(subMesh.quads)
-        
-        GXLists = GXCommandList.ConvertToGXList(newConv, triList, quadList, False)
+        GXLists = GXCommandList.ConvertToGXList(newConv, False)
         
         WriteFile.WriteFile(GXLists, newConv, mats, nodes, self.filepath)
 

@@ -16,6 +16,15 @@ class NSBMDDataVert():
         self.cola = 0
         self.targetMatrix = 0
 
+class NSBMDVertList():
+    def __init__(self):
+        self.verts = []
+        self.materialInd = 0
+        self.matrixDeps = []
+        self.tris = []
+        self.quads = []
+        self.vertConversion = {}
+
 class NSBMDModelData():
     def __init__(self):
         self.NSBCommands = []
@@ -124,9 +133,14 @@ def ConvertVerts(meshes, materials):
     weightMap = {}
     inverseWeightMap = []
     
+    j = 0
     for mesh, mat in zip(meshes, materials):
         vertList = []
         verts = mesh.verts
+        vertData = NSBMDVertList()
+        vertData.tris = mesh.tris
+        vertData.quads = mesh.quads
+        vertData.materialInd = j
         i = 0
         while i < len(verts):
             newVert = NSBMDDataVert()
@@ -140,12 +154,12 @@ def ConvertVerts(meshes, materials):
                 newVert.normx = round(cVert.normx * 511)
                 newVert.normy = round(cVert.normy * 511)
                 newVert.normz = round(cVert.normz * 511)
-            newVert.x = round(((cVert.x + recenterX) / rescaleX) * 4096)
-            newVert.y = round(((cVert.y + recenterY) / rescaleY) * 4096)
-            newVert.z = round(((cVert.z + recenterZ) / rescaleZ) * 4096)
+            newVert.x = int(round(((cVert.x + recenterX) / rescaleX) * 4096))
+            newVert.y = int(round(((cVert.y + recenterY) / rescaleY) * 4096))
+            newVert.z = int(round(((cVert.z + recenterZ) / rescaleZ) * 4096))
             
-            newVert.u = round(cVert.u * 16 * mat.tex_width)
-            newVert.v = round(cVert.v * 16 * mat.tex_height)
+            newVert.u = int(round(cVert.u * 16 * mat.tex_width))
+            newVert.v = int(round(cVert.v * 16 * mat.tex_height))
             
             if not cVert.weights in weightMap:
                 weightMap[cVert.weights] = len(inverseWeightMap)
@@ -153,10 +167,129 @@ def ConvertVerts(meshes, materials):
             
             newVert.targetMatrix = weightMap[cVert.weights]
             
+            if not newVert.targetMatrix in vertData.matrixDeps:
+                vertData.matrixDeps.append(newVert.targetMatrix)
+            
             vertList.append(newVert)
             
             i += 1
-        data.modelVerts.append(vertList)
+        
+        vertData.verts = vertList
+        # split if >30 weights
+        if (len(vertData.matrixDeps) > 30):
+            vertDatas = []
+            for i in range(0,len(vertData.tris),3):
+                v1 = vertData.verts[vertData.tris[i]]
+                v2 = vertData.verts[vertData.tris[i+1]]
+                v3 = vertData.verts[vertData.tris[i+2]]
+                vertsAsArray = []
+                vertsAsArray.append(v1)
+                vertsAsArray.append(v2)
+                vertsAsArray.append(v3)
+                foundExisting = False
+                # check if vert combo already exists
+                for vData in vertDatas:
+                    if (v1.targetMatrix in vData.matrixDeps) and (v2.targetMatrix in vData.matrixDeps) and (v3.targetMatrix in vData.matrixDeps):
+                        foundExisting = True
+                        for k in range(0,3):
+                            if (vertData.tris[i+k] in vData.vertConversion):
+                                vData.tris.append(vData.vertConversion[vertData.tris[i+k]])
+                            else:
+                                vData.tris.append(len(vData.verts))
+                                vData.vertConversion[vertData.tris[i+k]] = len(vData.verts)
+                                vData.verts.append(vertsAsArray[k])
+                if (foundExisting):
+                    continue
+                # check for partial match
+                closestMatch = -1
+                closestMatchCount = 0
+                for k in range(0,len(vertDatas)):
+                    vData = vertDatas[k]
+                    currMatchCount = 0
+                    for v in vertsAsArray:
+                        if v.targetMatrix in vData.matrixDeps:
+                            currMatchCount += 1
+                    if (len(vData.matrixDeps)+(3-currMatchCount)<=30) and (currMatchCount > closestMatchCount):
+                        closestMatch = k
+                        closestMatchCount = currMatchCount
+                
+                if closestMatch == -1:
+                    newVertData = NSBMDVertList()
+                    newVertData.materialInd = vertData.materialInd
+                    closestMatch = len(vertDatas)
+                    vertDatas.append(newVertData)
+                
+                vData = vertDatas[closestMatch]
+                for k in range(0,3):
+                    if (vertData.tris[i+k] in vData.vertConversion):
+                        vData.tris.append(vData.vertConversion[vertData.tris[i+k]])
+                    else:
+                        vData.tris.append(len(vData.verts))
+                        vData.vertConversion[vertData.tris[i+k]] = len(vData.verts)
+                        vData.verts.append(vertsAsArray[k])
+                        if (not vertsAsArray[k].targetMatrix in vData.matrixDeps):
+                            vData.matrixDeps.append(vertsAsArray[k].targetMatrix)
+            
+            for i in range(0,len(vertData.quads),4):
+                v1 = vertData.verts[vertData.quads[i]]
+                v2 = vertData.verts[vertData.quads[i+1]]
+                v3 = vertData.verts[vertData.quads[i+2]]
+                v4 = vertData.verts[vertData.quads[i+3]]
+                vertsAsArray = []
+                vertsAsArray.append(v1)
+                vertsAsArray.append(v2)
+                vertsAsArray.append(v3)
+                vertsAsArray.append(v4)
+                foundExisting = False
+                # check if vert combo already exists
+                for vData in vertDatas:
+                    if (v1.targetMatrix in vData.matrixDeps) and (v2.targetMatrix in vData.matrixDeps) and (v3.targetMatrix in vData.matrixDeps) and (v4.targetMatrix in vData.matrixDeps):
+                        foundExisting = True
+                        for k in range(0,4):
+                            if (vertData.quads[i+k] in vData.vertConversion):
+                                vData.quads.append(vData.vertConversion[vertData.quads[i+k]])
+                            else:
+                                vData.quads.append(len(vData.verts))
+                                vData.vertConversion[vertData.quads[i+k]] = len(vData.verts)
+                                vData.verts.append(vertsAsArray[k])
+                if (foundExisting):
+                    continue
+                # check for partial match
+                closestMatch = -1
+                closestMatchCount = 0
+                for k in range(0,len(vertDatas)):
+                    vData = vertDatas[k]
+                    currMatchCount = 0
+                    for v in vertsAsArray:
+                        if v.targetMatrix in vData.matrixDeps:
+                            currMatchCount += 1
+                    if (len(vData.matrixDeps)+(4-currMatchCount)<=30) and (currMatchCount > closestMatchCount):
+                        closestMatch = k
+                        closestMatchCount = currMatchCount
+                
+                if closestMatch == -1:
+                    newVertData = NSBMDVertList()
+                    newVertData.materialInd = vertData.materialInd
+                    closestMatch = len(vertDatas)
+                    vertDatas.append(newVertData)
+                
+                vData = vertDatas[closestMatch]
+                for k in range(0,4):
+                    if (vertData.quads[i+k] in vData.vertConversion):
+                        vData.quads.append(vData.vertConversion[vertData.quads[i+k]])
+                    else:
+                        vData.quads.append(len(vData.verts))
+                        vData.vertConversion[vertData.quads[i+k]] = len(vData.verts)
+                        vData.verts.append(vertsAsArray[k])
+                        if (not vertsAsArray[k].targetMatrix in vData.matrixDeps):
+                            vData.matrixDeps.append(vertsAsArray[k].targetMatrix)
+            
+            for vData in vertDatas:
+                data.modelVerts.append(vData)
+        else:
+            data.modelVerts.append(vertData)
+        
+        j += 1
     
     # TODO: split meshes with too many weights
     
@@ -168,9 +301,12 @@ def ConvertVerts(meshes, materials):
     data.NSBCommands.append(0)
     data.NSBCommands.append(0)
     data.NSBCommands.append(0xB)
-    for i in range(0,len(meshes)):
-        data.NSBCommands.append(0x4)
-        data.NSBCommands.append(i)
+    currMat = -1
+    for i in range(0,len(data.modelVerts)):
+        if (data.modelVerts[i].materialInd != currMat):
+            currMat = data.modelVerts[i].materialInd
+            data.NSBCommands.append(0x4)
+            data.NSBCommands.append(currMat)
         data.NSBCommands.append(0x5)
         data.NSBCommands.append(i)
     data.NSBCommands.append(1) # END: TODO: handle this when writing so we cover all meshes

@@ -52,10 +52,8 @@ def GetNodes(arma):
     return retValue
 
 def GetBonelessNode(obj):
-    retValue = []
     
     node = Node()
     node.name = obj.name
     node.validTransform = False
-    retValue.append(node)
-    return retValue
+    return node

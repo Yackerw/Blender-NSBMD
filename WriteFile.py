@@ -272,7 +272,7 @@ def WriteVertexMesh(f, GXLists, mats):
     listStartOffs = f.tell()
     meshNames = []
     for i in range(0,len(GXLists)):
-        meshNames.append(mats[i].name)
+        meshNames.append("polygon"+str(i))
     infoOffs = WriteInfoBlock(f, len(GXLists), meshNames)
     vertexMeshStart = f.tell()
     
@@ -360,10 +360,12 @@ def WriteBMD(f, GXLists, convertedData, materials, nodes):
     util.write_integer(f, "<", convertedData.scaleX)
     util.write_integer(f, "<", int(16777216 / convertedData.scaleX))
     # data counts (only for debugging, considering it uses draw lists?)
-    util.write_short(f, "<", convertedData.vertCount)
-    util.write_short(f, "<", convertedData.triCount + convertedData.quadCount)
-    util.write_short(f, "<", convertedData.triCount)
-    util.write_short(f, "<", convertedData.quadCount)
+    #util.write_short(f, "<", convertedData.vertCount)
+    #util.write_short(f, "<", convertedData.triCount + convertedData.quadCount)
+    #util.write_short(f, "<", convertedData.triCount)
+    #util.write_short(f, "<", convertedData.quadCount)
+    util.write_integer(f, "<", 0)
+    util.write_integer(f, "<", 0)
     util.write_signed_short(f, "<", convertedData.boundsX)
     util.write_signed_short(f, "<", convertedData.boundsY)
     util.write_signed_short(f, "<", convertedData.boundsZ)
