@@ -109,6 +109,14 @@ class ShaderNodeNSBMDShader(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
         )
         return blend_types
 
+    def billboard_modes(self, context):
+        mix_types = (
+            ('0', "None", "Don't render as a Billboard"),
+            ('1', "Billboard", ""),
+            ('2', "Billboard on X", "Only rotate Billboard left/right"),
+        )
+        return mix_types
+
     def update_lighting_modes(self, context):
         if not self.lighting_mode:
             self.lighting_mode = self.lighting_modes(context)[0][0]
@@ -121,6 +129,10 @@ class ShaderNodeNSBMDShader(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
 
         self.node_tree = bpy.data.node_groups[blend_types[self.lighting_mode]]
 
+    def update_billboard(self, context):
+        if not self.billboard_mode:
+            self.billboard_mode = self.billboard_modes(context)[0][0]
+
     def update_facing(self, context):
         curr_mat = _get_material(self)
         if self["backface"] and self["frontface"] or self["backface"]:
@@ -131,10 +143,11 @@ class ShaderNodeNSBMDShader(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
             curr_mat.use_backface_culling = False
 
     def draw_buttons(self, context, layout):
-        ignore = {'Advanced', 'Lighting Mode', 'Draw Backface', 'Draw Frontface', 'Polygon ID'}
+        ignore = {'Advanced', 'Lighting Mode', 'Draw Backface', 'Draw Frontface', 'Polygon ID', 'Billboard Render'}
         _shader_ui_common(self, ignore, layout, {5, 8})
 
         layout.prop(self, 'lighting_mode', text="")
+        layout.prop(self, 'billboard_mode', text="")
         layout.prop(self, 'backface')
         layout.prop(self, 'frontface')
         layout.prop(self, 'polygon_id')
@@ -156,6 +169,8 @@ class ShaderNodeNSBMDShader(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
     depth_test_equals: BoolProperty(name="Depth test as equals", default=False, options=set())
     fog_enabled: BoolProperty(name="Enable Fog", default=False, options=set())
 
+    billboard_mode: EnumProperty(name="Billboard Render", update=update_billboard, items=billboard_modes)
+
     advanced: BoolProperty(name="Advanced", default=False, options=set())
 
     def copy(self, node):
@@ -167,6 +182,7 @@ class ShaderNodeNSBMDShader(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
     def init(self, context):
         self.node_tree = bpy.data.node_groups['.NSBMD_SHADER_MULTI']
         self.lighting_mode = self.lighting_modes(context)[0][0]
+        self.billboard_mode = self.billboard_modes(context)[0][0]
         self["backface"] = False
         self["frontface"] = True
 
