@@ -113,7 +113,7 @@ class ShaderNodeNSBMDShader(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
         mix_types = (
             ('0', "None", "Don't render as a Billboard"),
             ('1', "Billboard", ""),
-            ('2', "Billboard on X", "Only rotate Billboard left/right"),
+            ('2', "Billboard on Y", "Only rotate Billboard left/right"),
         )
         return mix_types
 
