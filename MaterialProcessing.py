@@ -104,7 +104,7 @@ def GetMaterialInfo(model):
         if not texture_node.image:
             raise ReferenceError("Please add Image to Texture Node in material " + mat.name)
         newMat.tex_width, newMat.tex_height = texture_node.image.size
-        newMat.texture_name = texture_node.image.name
+        newMat.texture_name = texture_node.image.name.rsplit('.', 1)[0]
         
         texRepeatModeU = int(vector_node.u_type) # clamp, repeat, mirror
         texRepeatModeV = int(vector_node.v_type)
