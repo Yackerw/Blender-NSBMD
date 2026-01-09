@@ -59,10 +59,5 @@ class NSBMD_PT_Texture(GENERIC_panel, bpy.types.Panel):
         layout = self.layout
         if context.object.type == "MESH":
             obj = context.object
-            layout.prop(obj.data, "nsbmd_texture_count")
-            layout.operator("operator.nsbmd_get_textures")
-            for i in obj.data.nsbmd_textures:
-                layout.prop(i, "texture", text="")
-                layout.prop(i, "image_compression", text="")
-                if i.image_compression not in {"5", "7"}:
-                    layout.prop(i, "dq9_palette")
+            layout.operator("operator.nsbmd_assign_nsbtx")
+            layout.prop(obj.data, "nsbtx_path")

@@ -1,6 +1,6 @@
 import bpy
 from bpy.props import StringProperty, EnumProperty, BoolProperty, IntProperty
-from bpy_extras.io_utils import ExportHelper
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 import textwrap
 from . import export
 from .node_groups import MakeGroups
@@ -42,34 +42,6 @@ class ExportNSBMD(bpy.types.Operator, ExportHelper):
 
 def menu_func_export(self, context):  # add to dynamic menu
     self.layout.operator(ExportNSBMD.bl_idname, text="Export NSBMD Model")
-
-
-class GetNSBMDTexture(bpy.types.Operator):
-    """Get Textures from this meshes materials"""
-    bl_idname = "operator.nsbmd_get_textures"
-    bl_label = "Get Textures"
-    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
-
-    def execute(self, context):
-        obj = context.object
-        if obj.type != 'MESH':
-            return {'FINISHED'}
-        materials = set()
-        images = set()
-        for m_slot in obj.material_slots:
-            materials.add(m_slot.material)
-        for material in list(materials):
-            if material.node_tree:
-                for node in material.node_tree.nodes:
-                    node_n = node.bl_idname
-                    if node_n == 'ShaderNodeTexImage':
-                        images.add(node.image)
-        context.object.data.nsbmd_texture_count = len(images)
-
-        for img, tex in zip(list(images), obj.data.nsbmd_textures):
-            tex.texture = img
-
-        return {'FINISHED'}
 
 
 class NSBMDNodeAdd(bpy.types.Operator):
@@ -142,4 +114,20 @@ class NodeNSBMDSetup(bpy.types.Operator):
 
         if existing_diffuse:
             image.image = existing_diffuse
+        return {'FINISHED'}
+
+
+class NSBMDSetTextureFile(bpy.types.Operator, ImportHelper):
+    """Assign a NSBTX file to this model"""
+    bl_idname = "operator.nsbmd_assign_nsbtx"
+    bl_label = "Assign NSBTX file"
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+    filename_ext = "*.nsbtx"
+    filter_glob: StringProperty(
+        default="*.nsbtx",
+        options={'HIDDEN'},
+        maxlen=255)
+
+    def execute(self, context):
+        context.object.data.nsbtx_path = self.filepath
         return {'FINISHED'}
