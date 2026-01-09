@@ -11,7 +11,7 @@ class NSBMD_MT_Node_Add(bpy.types.Menu):
             var = layout.operator("node.add_node_nsbmd", text=cla.bl_label)
             var.type = cla.bl_idname
             var.use_transform = True
-        layout.operator("node.nsbmd_operator", text="NSBMD Setup")
+        layout.operator("node.nsbmd_operator", text="Setup Nodes")
 
 
 def nsbmd_node_menu(self, context):
