@@ -62,7 +62,7 @@ def ProcessMesh(mesh, obj):
                     for uv_layer in mesh.uv_layers:
                         uv = uv_layer.uv[loop_ind].vector
                         newVert.u = uv.x
-                        newVert.v = uv.y
+                        newVert.v = 1.0-uv.y
                         break
 
                     weights = tuple([(obj.vertex_groups[group.group].name, int(group.weight*256)) for group in mesh.vertices[loop.vertex_index].groups[::]])
