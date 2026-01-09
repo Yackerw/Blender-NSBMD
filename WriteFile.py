@@ -196,26 +196,52 @@ def WriteMaterials(f, materials):
     f.seek(texture_pairing_offs, 0)
     util.write_short(f, "<", curr_offs-texture_pairing_offs)
     f.seek(0, 2)
+    
+    # get unique texture count
+    # TODO: open nsbtx and order these the same as the nsbtx
+    textures = {}
+    textureCount = 0
+    for mat in materials:
+        if not mat.texture_name in textures:
+            textures[mat.texture_name] = textureCount
+            textureCount += 1
     # :/
     paletteNames = []
-    paletteNames.append("TestPalette")
-    texInfo = WriteInfoBlock(f, 1, paletteNames)
+    texNames = []
+    for key, value in textures.items():
+        paletteNames.append(key+"_pl")
+        texNames.append(key)
+    texInfo = WriteInfoBlock(f, textureCount, texNames)
     curr_offs = f.tell()
     f.seek(texture_pairing_offs+2, 0)
     util.write_short(f, "<", curr_offs-texture_pairing_offs)
     f.seek(0, 2)
-    paletteInfo = WriteInfoBlock(f, 1, paletteNames)
-    curr_offs = f.tell()
-    curr_offs = f.tell()
-    f.seek(texInfo.offsetOffsets[0])
-    util.write_integer(f, "<", curr_offs-texture_pairing_offs | (1 << 16)) # 1 << 16 = count of items
-    f.seek(0, 2)
-    util.write_byte(f, "<", 0)
-    curr_offs = f.tell()
-    f.seek(paletteInfo.offsetOffsets[0])
-    util.write_integer(f, "<", curr_offs-texture_pairing_offs | (1 << 16)) # 1 << 16 = count of items
-    f.seek(0, 2)
-    util.write_byte(f, "<", 0)
+    paletteInfo = WriteInfoBlock(f, textureCount, paletteNames)
+    j = 0
+    for key, value in textures.items():
+        curr_offs = f.tell()
+        matUsedCount = 0
+        for i in range(0,len(materials)):
+            if materials[i].texture_name == key:
+                print(key)
+                util.write_byte(f, "<", i)
+                matUsedCount += 1
+        f.seek(texInfo.offsetOffsets[j])
+        util.write_integer(f, "<", curr_offs-texture_pairing_offs | (matUsedCount << 16)) # 1 << 16 = count of items
+        f.seek(0, 2)
+        j += 1
+    j = 0
+    for key, value in textures.items():
+        curr_offs = f.tell()
+        matUsedCount = 0
+        for i in range(0,len(materials)):
+            if materials[i].texture_name == key:
+                util.write_byte(f, "<", i)
+                matUsedCount += 1
+        f.seek(paletteInfo.offsetOffsets[j])
+        util.write_integer(f, "<", curr_offs-texture_pairing_offs | (matUsedCount << 16)) # 1 << 16 = count of items
+        f.seek(0, 2)
+        j += 1
     util.write_aligned(f, 4)
     
     i = 0

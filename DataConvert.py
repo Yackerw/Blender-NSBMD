@@ -48,7 +48,7 @@ def ConvertVerts(meshes, materials):
     vert_minY = 99999999
     vert_minZ = 99999999
     
-    for mesh, mat in zip(meshes, materials):
+    for mesh in meshes:
         i = 0
         verts = mesh.verts
         while (i < len(verts)):
@@ -121,7 +121,10 @@ def ConvertVerts(meshes, materials):
     
     # convert verts
     
-    for mesh in meshes:
+    weightMap = {}
+    inverseWeightMap = []
+    
+    for mesh, mat in zip(meshes, materials):
         vertList = []
         verts = mesh.verts
         i = 0
@@ -144,11 +147,18 @@ def ConvertVerts(meshes, materials):
             newVert.u = round(cVert.u * 16 * mat.tex_width)
             newVert.v = round(cVert.v * 16 * mat.tex_height)
             
+            if not cVert.weights in weightMap:
+                weightMap[cVert.weights] = len(inverseWeightMap)
+                inverseWeightMap.append(cVert.weights)
+            
+            newVert.targetMatrix = weightMap[cVert.weights]
+            
             vertList.append(newVert)
             
-            # TODO: WEIGHTS
             i += 1
         data.modelVerts.append(vertList)
+    
+    # TODO: split meshes with too many weights
     
     data.NSBCommands.append(2)
     data.NSBCommands.append(0)

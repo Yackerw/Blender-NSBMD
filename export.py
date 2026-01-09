@@ -65,7 +65,7 @@ def ProcessMesh(mesh, obj):
                         newVert.v = uv.y
                         break
 
-                    weights = tuple([(obj.vertex_groups[group.group].name, group.weight) for group in mesh.vertices[loop.vertex_index].groups[::]])
+                    weights = tuple([(obj.vertex_groups[group.group].name, int(group.weight*256)) for group in mesh.vertices[loop.vertex_index].groups[::]])
                     newVert.weights = weights
                     
                     vertAsTuple = ((newVert.x,newVert.y,newVert.z),(newVert.normx,newVert.normy,newVert.normz),(newVert.u,newVert.v), weights)
