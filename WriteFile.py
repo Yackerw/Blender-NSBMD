@@ -73,8 +73,8 @@ def CreatePatriciaTree(names):
         if (len(currName) >= 16):
             currName = currName[:15]
         newNames.append(currName.encode('ascii'))
+    foundNames[0] = True
     for i in range(0,len(names)):
-        foundNames[i] = True
         bit,left,right = FindPatriciaBit(newNames,newNames[i],foundNames)
         newNode = TreeNode()
         newNode.bit = bit
