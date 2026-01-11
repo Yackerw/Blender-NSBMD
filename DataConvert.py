@@ -142,33 +142,16 @@ def ProcessNodes(data, nodes, inverseWeightMap):
 
 def ConvertVerts(meshes, materials, nodes):
     data = NSBMDModelData()
-    
-    vert_maxX = -99999999
-    vert_maxY = -99999999
-    vert_maxZ = -99999999
-    vert_minX = 99999999
-    vert_minY = 99999999
-    vert_minZ = 99999999
-    
-    for mesh in meshes:
-        i = 0
-        verts = mesh.verts
-        while (i < len(verts)):
-            curr_v = verts[i]
-            if (vert_maxX < curr_v.x):
-                vert_maxX = curr_v.x
-            if (vert_minX > curr_v.x):
-                vert_minX = curr_v.x
-            if (vert_maxY < curr_v.y):
-                vert_maxY = curr_v.y
-            if (vert_minY > curr_v.y):
-                vert_minY = curr_v.y
-            if (vert_maxZ < curr_v.z):
-                vert_maxZ = curr_v.z
-            if (vert_minZ > curr_v.z):
-                vert_minZ = curr_v.z
-            
-            i = i + 1
+    all_verts = [mesh.verts for mesh in meshes for mesh.verts in mesh]
+    all_x = [a.x for a in all_verts]
+    all_y = [a.y for a in all_verts]
+    all_z = [a.z for a in all_verts]
+    vert_maxX = max(all_x)
+    vert_minX = min(all_x)
+    vert_maxY = max(all_y)
+    vert_minY = min(all_y)
+    vert_maxZ = max(all_z)
+    vert_minZ = min(all_z)
     vert_centerX = (vert_maxX+vert_minX)/2
     vert_centerY = (vert_maxY+vert_minY)/2
     vert_centerZ = (vert_maxZ+vert_minZ)/2
