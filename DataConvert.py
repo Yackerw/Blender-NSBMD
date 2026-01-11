@@ -46,8 +46,101 @@ class NSBMDModelData():
         self.boundsHeight = 0
         self.boundsZWidth = 0
 
+def GetNodeIndex(name,nodes):
+    for i in range(0,len(nodes)):
+        if nodes[i].name == name:
+            return i
 
-def ConvertVerts(meshes, materials):
+def LoadNodeToStack(data, nodes, cVert, inverseWeightMap, nodeInd, nodeStackPositions, futureNodesUsed, occupiedStack):
+    # TODO: come up with a solution to indicate final rigs
+    if nodeStackPositions[nodeInd] == -1:
+        # set up parents bone chain first thing so we don't wind up trying to use the same matrix position
+        parentStackPos = 0
+        if (nodes[nodeInd].parent != -1):
+            parentStackPos = LoadNodeToStack(data, nodes, cVert, inverseWeightMap, nodes[nodeInd].parent, nodeStackPositions, futureNodesUsed, occupiedStack)
+        stackPosFound = -1
+        # first, try finding a free spot
+        for k in range(1,31): # 0 is always reserved for base matrix
+            if (occupiedStack[k] == -0.5):
+                stackPosFound = k
+                break
+        if stackPosFound == -1:
+            # that failed; prioritize a stale index
+            for k in range(1,31):
+                if occupiedStack[k] >= 0:
+                    matrixCombo = occupiedStack[k]
+                    reliantOnMatrix = False
+                    for dep in cVert.matrixDeps:
+                        if dep == matrixCombo:
+                            reliantOnMatrix = True
+                            break
+                    if reliantOnMatrix == True:
+                        continue
+                    stackPosFound = k
+                    break
+        if stackPosFound == -1:
+            # that failed; prioritize a bone that's not necessary
+            # TODO: KEEP bones that are a parent of a dependency at this point
+            for k in range(1,31):
+                if occupiedStack[k] < 0:
+                    stackNode = abs((-occupiedStack[k])-1)
+                    if (stackNode == nodes[nodeInd].parent):
+                        continue
+                    stackIsRequired = False
+                    for dep in cVert.matrixDeps:
+                        for depName,depWeight in inverseWeightMap[dep]:
+                            depNodeInd = GetNodeIndex(depName, nodes)
+                            if depNodeInd == stackNode:
+                                stackIsRequired = True
+                                break
+                    if stackIsRequired == False:
+                        stackPosFound = k
+                        break
+        # TODO: combos that are used later on but not now, and then parents of dependencies (anything that isn't a dependency)
+        
+        # stackPos should ALWAYS be found by now (and if it hasn't, that's a separate problem)
+        
+        if parentStackPos < 0: # < 0 means it's in curr matrix
+            data.NSBCommands.append(0x26)
+            data.NSBCommands.append(nodeInd)
+            data.NSBCommands.append(nodes[nodeInd].parent)
+            data.NSBCommands.append(0)
+            data.NSBCommands.append(stackPosFound)
+        else:
+            data.NSBCommands.append(0x66)
+            data.NSBCommands.append(nodeInd)
+            data.NSBCommands.append(nodes[nodeInd].parent)
+            data.NSBCommands.append(0)
+            data.NSBCommands.append(parentStackPos)
+            data.NSBCommands.append(stackPosFound)
+        nodeStackPositions[nodeInd] = stackPosFound
+        occupiedStack[stackPosFound] = -(stackPosFound+1)
+        
+        return -(nodeStackPositions[nodeInd]+1)
+        
+    return nodeStackPositions[nodeInd]
+
+def ProcessNodes(data, nodes, inverseWeightMap):
+    curr_mtx = len(nodes)-1
+    nodeStackPositions = []
+    futureNodesUsed = []
+    for i in range(0,len(nodes)):
+        nodeStackPositions.append(-1)
+        futureNodesUsed.append(False)
+    nodeStackPositions[curr_mtx] = 0
+    occupiedStack = []
+    for i in range(0,31):
+        occupiedStack.append(-0.5)
+    occupiedStack[0] = -(len(nodes)+1) # -0.5 == not used, abs((-x)-1) == raw node ind, otherwise == to skin combo
+    
+    for i in range(0,len(data.modelVerts)):
+        cVert = data.modelVerts
+        for j in range(0,len(cVert.matrixDeps)):
+            for name,weight in inverseWeightMap[cVert.matrixDeps[j]]:
+                nodeInd=GetNodeIndex(name,nodes)
+                LoadNodeToStack(data, nodes, cVert, inverseWeightMap, nodeInd, nodeStackPositions, futureNodesUsed, occupiedStack)
+
+def ConvertVerts(meshes, materials, nodes):
     data = NSBMDModelData()
     
     vert_maxX = -99999999
@@ -175,8 +268,9 @@ def ConvertVerts(meshes, materials):
             i += 1
         
         vertData.verts = vertList
-        # split if >30 weights
-        if (len(vertData.matrixDeps) > 30):
+        # split if >26 weights
+        # explanation: maximum of 4 weights per vertex, plus 1 for parent, and last one is internal scratch
+        if (len(vertData.matrixDeps) > 26):
             vertDatas = []
             for i in range(0,len(vertData.tris),3):
                 v1 = vertData.verts[vertData.tris[i]]
@@ -209,7 +303,7 @@ def ConvertVerts(meshes, materials):
                     for v in vertsAsArray:
                         if v.targetMatrix in vData.matrixDeps:
                             currMatchCount += 1
-                    if (len(vData.matrixDeps)+(3-currMatchCount)<=30) and (currMatchCount > closestMatchCount):
+                    if (len(vData.matrixDeps)+(3-currMatchCount)<=26) and (currMatchCount > closestMatchCount):
                         closestMatch = k
                         closestMatchCount = currMatchCount
                 
@@ -263,7 +357,7 @@ def ConvertVerts(meshes, materials):
                     for v in vertsAsArray:
                         if v.targetMatrix in vData.matrixDeps:
                             currMatchCount += 1
-                    if (len(vData.matrixDeps)+(4-currMatchCount)<=30) and (currMatchCount > closestMatchCount):
+                    if (len(vData.matrixDeps)+(4-currMatchCount)<=26) and (currMatchCount > closestMatchCount):
                         closestMatch = k
                         closestMatchCount = currMatchCount
                 
@@ -291,16 +385,21 @@ def ConvertVerts(meshes, materials):
         
         j += 1
     
-    # TODO: split meshes with too many weights
+    # visibility commands, then matrix commands
     
     data.NSBCommands.append(2)
     data.NSBCommands.append(0)
     data.NSBCommands.append(1)
-    data.NSBCommands.append(6)
-    data.NSBCommands.append(0)
+    data.NSBCommands.append(0x26)
+    data.NSBCommands.append(len(nodes)-1)
+    data.NSBCommands.append(len(nodes)-1)
     data.NSBCommands.append(0)
     data.NSBCommands.append(0)
     data.NSBCommands.append(0xB)
+    
+    ProcessNodes(nodes,data,inverseWeightMap)
+    
+    
     currMat = -1
     for i in range(0,len(data.modelVerts)):
         if (data.modelVerts[i].materialInd != currMat):

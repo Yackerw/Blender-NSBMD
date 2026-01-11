@@ -114,7 +114,7 @@ class ExportModel:
 
         mats = MaterialProcessing.GetMaterialInfo(blenderMesh)
         
-        newConv = DataConvert.ConvertVerts(mesh.subModels, mats)
+        newConv = DataConvert.ConvertVerts(mesh.subModels, mats, nodes)
         
         GXLists = GXCommandList.ConvertToGXList(newConv, False)
         
