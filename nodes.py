@@ -194,8 +194,8 @@ class ShaderNodeNSBMDVector(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
 
     def transform_modes(self, context):
         mix_types = (
-            ('0', "None", "UV Transform without a transform matrix"),
-            ('1', "UV", ""),
+            ('0', "UV Only", "UV Transform without a transform matrix"),
+            ('1', "UV Matrix", ""),
             ('2', "Normal", ""),
             ('3', "Position", ""),
         )
@@ -225,7 +225,7 @@ class ShaderNodeNSBMDVector(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
 
     def update_mode(self, context):
         if not self.transform_mode:
-            self.transform_mode = self.transform_modes(context)[1][0]
+            self.transform_mode = self.transform_modes(context)[0][0]
         mix_types = {
             "0": '.NSBMD_VECTOR_UV',
             "1": '.NSBMD_VECTOR_UV',
@@ -261,7 +261,7 @@ class ShaderNodeNSBMDVector(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
 
     def init(self, context):
         self.node_tree = bpy.data.node_groups['.NSBMD_VECTOR_UV']
-        self.transform_mode = self.transform_modes(context)[1][0]
+        self.transform_mode = self.transform_modes(context)[0][0]
         self.u_type = self.u_types(context)[1][0]
         self.v_type = self.v_types(context)[1][0]
         self.inputs["U"].hide = True
