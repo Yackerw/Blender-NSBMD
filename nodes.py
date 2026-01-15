@@ -227,7 +227,7 @@ class ShaderNodeNSBMDVector(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
         if not self.transform_mode:
             self.transform_mode = self.transform_modes(context)[0][0]
         mix_types = {
-            "0": '.NSBMD_VECTOR_UV',
+            "0": '.NSBMD_VECTOR_UV_MATRIXLESS',
             "1": '.NSBMD_VECTOR_UV',
             "2": '.NSBMD_VECTOR_NORMAL',
             "3": '.NSBMD_VECTOR_POSITION',
@@ -260,7 +260,7 @@ class ShaderNodeNSBMDVector(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
     transform_mode: EnumProperty(name="Transform Mode", update=update_mode, items=transform_modes)
 
     def init(self, context):
-        self.node_tree = bpy.data.node_groups['.NSBMD_VECTOR_UV']
+        self.node_tree = bpy.data.node_groups['.NSBMD_VECTOR_UV_MATRIXLESS']
         self.transform_mode = self.transform_modes(context)[0][0]
         self.u_type = self.u_types(context)[1][0]
         self.v_type = self.v_types(context)[1][0]
