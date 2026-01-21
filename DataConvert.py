@@ -1,5 +1,6 @@
 import bpy
 import mathutils
+import math
 
 class NSBMDDataVert():
     def __init__(self):
@@ -64,14 +65,14 @@ def GetNodeIndex(name,nodes):
         if nodes[i].name == name:
             return i
 
-def LoadNodeToStack(data, nodes, cVert, cVertIndex, inverseWeightMap, nodeInd, isCombo, nodeCtx):
+def LoadNodeToStack(data, nodes, cVert, cVertInd, inverseWeightMap, nodeInd, isCombo, nodeCtx):
     # TODO: come up with a solution to indicate final rigs
     if isCombo == True or nodeCtx.nodeStackPositions[nodeInd] == -1:
         # set up parents bone chain first thing so we don't wind up trying to use the same matrix position
         parentStackPos = 0
         parentIsCurrent = False
         if (isCombo == False and nodes[nodeInd].parent != -1):
-            parentStackPos,parentIsCurrent = LoadNodeToStack(data, nodes, cVert, cVertIndex, inverseWeightMap, nodes[nodeInd].parent, False, nodeCtx)
+            parentStackPos,parentIsCurrent = LoadNodeToStack(data, nodes, cVert, cVertInd, inverseWeightMap, nodes[nodeInd].parent, False, nodeCtx)
         stackPosFound = -1
         # first, try finding a free spot
         for k in range(1,31): # 0 is always reserved for base matrix
@@ -122,7 +123,7 @@ def LoadNodeToStack(data, nodes, cVert, cVertIndex, inverseWeightMap, nodeInd, i
         # stackPos should ALWAYS be found by now (and if it hasn't, that's a separate problem)
         
         if (isCombo == False):
-            if parentIsCurrent == True and False==True:
+            if parentIsCurrent == True:
                 data.NSBCommands.append(0x26)
                 data.NSBCommands.append(nodeInd)
                 data.NSBCommands.append(max(nodes[nodeInd].parent,0))
@@ -155,13 +156,11 @@ def FindNode(nodeCtx, nodeInd, isCombo):
     return -1
 
 def ProcessNodes(data, nodes, inverseWeightMap):
-    
     data.NSBCommands.append(0x26) # set up first node; always parent most
     data.NSBCommands.append(len(nodes)-1)
     data.NSBCommands.append(len(nodes)-1)
     data.NSBCommands.append(0)
     data.NSBCommands.append(0)
-    #data.NSBCommands.append(0xB) # just kinda hope this works
     
     nodeCtx = NodeContext()
     nodeCtx.curr_mtx = len(nodes)-1
@@ -182,9 +181,20 @@ def ProcessNodes(data, nodes, inverseWeightMap):
                 if (len(inverseWeightMap[cVert.matrixDeps[j]]) == 0):
                     # do nothing, just use matrix 0
                     pass
-                elif (inverseWeightMap[cVert.matrixDeps[j]][0][1] == 256):
+                elif (len(inverseWeightMap[cVert.matrixDeps[j]]) == 1):
                     nodeInd=GetNodeIndex(inverseWeightMap[cVert.matrixDeps[j]][0][0],nodes)
-                    LoadNodeToStack(data, nodes, cVert, j, inverseWeightMap, nodeInd, False, nodeCtx)
+                    targetInd,onStack = LoadNodeToStack(data, nodes, cVert, j, inverseWeightMap, nodeInd, False, nodeCtx)
+                    if (data.scaleX > 4096):
+                        if (onStack == False):
+                            data.NSBCommands.append(0x3)
+                            data.NSBCommands.append(targetInd)
+                        data.NSBCommands.append(0xB)
+                        data.NSBCommands.append(0x26)
+                        data.NSBCommands.append(len(nodes)-1)
+                        data.NSBCommands.append(len(nodes)-1)
+                        data.NSBCommands.append(0)
+                        targetInd,unused = LoadNodeToStack(data, nodes, cVert, 1, inverseWeightMap, cVert.matrixDeps[j], True, nodeCtx)
+                        data.NSBCommands.append(targetInd)
                 else:
                     for name,weight in inverseWeightMap[cVert.matrixDeps[j]]:
                         nodeInd=GetNodeIndex(name,nodes)
@@ -196,15 +206,16 @@ def ProcessNodes(data, nodes, inverseWeightMap):
                     for name,weight in inverseWeightMap[cVert.matrixDeps[j]]:
                         nodeInd1 = GetNodeIndex(name,nodes)
                         nodeInd2 = FindNode(nodeCtx, nodeInd1, False)
-                        print(name)
-                        print(weight)
-                        print(nodeInd1)
-                        print(nodeInd2)
-                        print(nodeCtx.occupiedStack[nodeInd2].value)
                         data.NSBCommands.append(nodeInd2)
                         data.NSBCommands.append(nodeInd1) # inverse matrix
                         data.NSBCommands.append(weight)
-                    
+                    if data.scaleX > 4096:
+                        data.NSBCommands.append(0xB)
+                        data.NSBCommands.append(0x26)
+                        data.NSBCommands.append(len(nodes)-1)
+                        data.NSBCommands.append(len(nodes)-1)
+                        data.NSBCommands.append(0)
+                        data.NSBCommands.append(targetInd)
         
         if (data.modelVerts[i].materialInd != currMat):
             currMat = cVert.materialInd
@@ -214,17 +225,12 @@ def ProcessNodes(data, nodes, inverseWeightMap):
         data.NSBCommands.append(i)
         
         for j in range(len(cVert.verts)):
-            if (inverseWeightMap[cVert.verts[j].targetMatrix][0][1] == 256):
-                nodeInd = GetNodeIndex(inverseWeightMap[cVert.verts[j].targetMatrix][0][0], nodes)
-                cVert.verts[j].targetMatrix = FindNode(nodeCtx, nodeInd, False)
-                vPos = nodes[nodeInd].inverseMatrix @ mathutils.Vector((cVert.verts[j].x, cVert.verts[j].y, cVert.verts[j].z, 4096.0))
-                vNorm = nodes[nodeInd].inverseMatrix.to_3x3().inverted().transposed() @ mathutils.Vector((cVert.verts[j].normx, cVert.verts[j].normy, cVert.verts[j].normz))
-                cVert.verts[j].x = int(vPos.x)
-                cVert.verts[j].y = int(vPos.y)
-                cVert.verts[j].z = int(vPos.z)
-                cVert.verts[j].normx = int(vNorm.x)
-                cVert.verts[j].normy = int(vNorm.y)
-                cVert.verts[j].normz = int(vNorm.z)
+            if (len(inverseWeightMap[cVert.verts[j].targetMatrix]) == 1):
+                if (data.scaleX > 4096):
+                    cVert.verts[j].targetMatrix = FindNode(nodeCtx, cVert.verts[j].targetMatrix, True)
+                else:
+                    nodeInd = GetNodeIndex(inverseWeightMap[cVert.verts[j].targetMatrix][0][0], nodes)
+                    cVert.verts[j].targetMatrix = FindNode(nodeCtx, nodeInd, False)
             else:
                 cVert.verts[j].targetMatrix = FindNode(nodeCtx, cVert.verts[j].targetMatrix, True)
         
@@ -255,9 +261,6 @@ def ConvertVerts(meshes, materials, nodes):
     rescaleY = 1
     rescaleZ = 1
     
-    max_pos = 32767/4096
-    min_pos = -8
-    
     """if vert_maxX > max_pos or vert_minX < min_pos:
         recenterX = -vert_centerX
         vert_maxX += recenterX 
@@ -268,24 +271,6 @@ def ConvertVerts(meshes, materials, nodes):
         recenterZ = -vert_centerZ
         vert_maxZ += recenterZ"""
     
-    if vert_maxX > max_pos:
-        rescaleX = vert_maxX / max_pos
-    if vert_maxY > max_pos:
-        rescaleY = vert_maxY / max_pos
-    if vert_maxZ > max_pos:
-        rescaleZ = vert_maxZ / max_pos
-    
-    rescaleX = max(rescaleX,rescaleY,rescaleZ)
-    rescaleY = rescaleX
-    rescaleZ = rescaleX
-    
-    #data.offsX = -round(recenterX*4096)
-    #data.offsY = -round(recenterY*4096)
-    #data.offsZ = -round(recenterZ*4096)
-    data.scaleX = round(rescaleX*4096)
-    data.scaleY = round(rescaleY*4096)
-    data.scaleZ = round(rescaleZ*4096)
-    
     data.boundsX = int(vert_centerX*rescaleX*4096)
     data.boundsY = int(vert_centerY*rescaleY*4096)
     data.boundsZ = int(vert_centerZ*rescaleZ*4096)
@@ -293,13 +278,19 @@ def ConvertVerts(meshes, materials, nodes):
     data.boundsHeight = int(max(abs(vert_centerY - vert_maxY), abs(vert_centerY - vert_minY))*rescaleY*4096)
     data.boundsZWidth = int(max(abs(vert_centerZ - vert_maxZ), abs(vert_centerZ - vert_minZ))*rescaleZ*4096)
     
-    
     # maybe do something about UVs?
     
     # convert verts
     
     weightMap = {}
     inverseWeightMap = []
+    
+    vert_maxX = -99999999999999
+    vert_minX = 99999999999999
+    vert_maxY = -99999999999999
+    vert_minY = 99999999999999
+    vert_maxZ = -99999999999999
+    vert_minZ = 99999999999999
     
     j = 0
     for mesh, mat in zip(meshes, materials):
@@ -322,9 +313,28 @@ def ConvertVerts(meshes, materials, nodes):
                 newVert.normx = round(cVert.normx * 511)
                 newVert.normy = round(cVert.normy * 511)
                 newVert.normz = round(cVert.normz * 511)
-            newVert.x = int(round(((cVert.x + recenterX) / rescaleX) * 4096))
-            newVert.y = int(round(((cVert.y + recenterY) / rescaleY) * 4096))
-            newVert.z = int(round(((cVert.z + recenterZ) / rescaleZ) * 4096))
+            
+            if (len(cVert.weights) == 1):
+                nodeInd = GetNodeIndex(cVert.weights[0][0],nodes)
+                new_pos = nodes[nodeInd].inverseMatrix @ mathutils.Vector((cVert.x,cVert.y,cVert.z,1.0))
+                newVert.x = int(round(new_pos.x * 4096))
+                newVert.y = int(round(new_pos.y * 4096))
+                newVert.z = int(round(new_pos.z * 4096))
+                new_norm = nodes[nodeInd].inverseMatrix.to_3x3().inverted().transposed() @ mathutils.Vector((cVert.normx,cVert.normy,cVert.normz))
+                newVert.normx = int(round(new_norm.x*511))
+                newVert.normy = int(round(new_norm.y*511))
+                newVert.normz = int(round(new_norm.z*511)) # kinda redundant but w/e
+            else:
+                newVert.x = int(round(cVert.x * 4096))
+                newVert.y = int(round(cVert.y * 4096))
+                newVert.z = int(round(cVert.z * 4096))
+            
+            vert_maxX = max(vert_maxX, newVert.x)
+            vert_minX = min(vert_minX, newVert.x)
+            vert_maxY = max(vert_maxY, newVert.y)
+            vert_minY = min(vert_minY, newVert.y)
+            vert_maxZ = max(vert_maxZ, newVert.z)
+            vert_minZ = min(vert_minZ, newVert.z)
             
             newVert.u = int(round(cVert.u * 16 * mat.tex_width))
             newVert.v = int(round(cVert.v * 16 * mat.tex_height))
@@ -459,6 +469,37 @@ def ConvertVerts(meshes, materials, nodes):
             data.modelVerts.append(vertData)
         
         j += 1
+    
+    max_pos = (8*4096)-1
+    min_pos = -8*4096
+    
+    if vert_maxX > max_pos:
+        rescaleX = vert_maxX / max_pos
+    if vert_minX < min_pos and abs(vert_minX) > vert_maxX:
+        rescaleX = vert_minX / min_pos
+    if vert_maxY > max_pos:
+        rescaleY = vert_maxY / max_pos
+    if vert_minY < min_pos and abs(vert_minY) > vert_maxY:
+        rescaleY = vert_minY / min_pos
+    if vert_maxZ > max_pos:
+        rescaleZ = vert_maxZ / max_pos
+    if vert_minZ < min_pos and abs(vert_minZ) > vert_maxZ:
+        rescaleZ = vert_minZ / min_pos
+    
+    rescaleX = max(rescaleX,rescaleY,rescaleZ)
+    
+    if (rescaleX < 1.0):
+        rescaleX = 1.0
+    
+    data.scaleX = math.ceil(rescaleX*4096)
+    rescaleX = data.scaleX / 4096
+    
+    if (rescaleX > 1.0):
+        for i in range(len(data.modelVerts)):
+            for j in range(len(data.modelVerts[i].verts)):
+                data.modelVerts[i].verts[j].x = int(data.modelVerts[i].verts[j].x/rescaleX)
+                data.modelVerts[i].verts[j].y = int(data.modelVerts[i].verts[j].y/rescaleX)
+                data.modelVerts[i].verts[j].z = int(data.modelVerts[i].verts[j].z/rescaleX)
     
     # visibility commands, then matrix commands
     
