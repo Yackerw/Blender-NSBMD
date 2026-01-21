@@ -109,12 +109,13 @@ def LoadNodeToStack(data, nodes, cVert, cVertInd, inverseWeightMap, nodeInd, isC
                             if depNodeInd == stackNode:
                                 stackIsRequired = True
                                 break
-                    for l in range(0,cVertInd): # we have to preserve 256 weight bones!
-                        dep = cVert.matrixDeps[l]
-                        for depName,depWeight in inverseWeightMap[dep]:
-                            depNodeInd = GetNodeIndex(depName, nodes)
-                            if depNodeInd == stackNode and depWeight == 256:
-                                stackIsRequired = True
+                    if (data.scaleX == 4096):
+                        for l in range(0,cVertInd): # we have to preserve 256 weight bones!
+                            dep = cVert.matrixDeps[l]
+                            for depName,depWeight in inverseWeightMap[dep]:
+                                depNodeInd = GetNodeIndex(depName, nodes)
+                                if depNodeInd == stackNode and depWeight == 256:
+                                    stackIsRequired = True
                     if stackIsRequired == False:
                         stackPosFound = k
                         break
@@ -179,8 +180,17 @@ def ProcessNodes(data, nodes, inverseWeightMap):
         for j in range(0,len(cVert.matrixDeps)):
             if (FindNode(nodeCtx, cVert.matrixDeps[j], True) == -1):
                 if (len(inverseWeightMap[cVert.matrixDeps[j]]) == 0):
-                    # do nothing, just use matrix 0
-                    pass
+                    # do nothing, just use matrix 0 if not scaled
+                    if data.scaleX > 4096:
+                        targetInd,unused = LoadNodeToStack(data, nodes, cVert, 1, inverseWeightMap, cVert.matrixDeps[j], True, nodeCtx)
+                        data.NSBCommands.append(0x3)
+                        data.NSBCommands.append(0)
+                        data.NSBCommands.append(0xB)
+                        data.NSBCommands.append(0x26)
+                        data.NSBCommands.append(len(nodes)-1)
+                        data.NSBCommands.append(len(nodes)-1)
+                        data.NSBCommands.append(0)
+                        data.NSBCommands.append(targetInd)
                 elif (len(inverseWeightMap[cVert.matrixDeps[j]]) == 1):
                     nodeInd=GetNodeIndex(inverseWeightMap[cVert.matrixDeps[j]][0][0],nodes)
                     targetInd,onStack = LoadNodeToStack(data, nodes, cVert, j, inverseWeightMap, nodeInd, False, nodeCtx)
@@ -231,6 +241,11 @@ def ProcessNodes(data, nodes, inverseWeightMap):
                 else:
                     nodeInd = GetNodeIndex(inverseWeightMap[cVert.verts[j].targetMatrix][0][0], nodes)
                     cVert.verts[j].targetMatrix = FindNode(nodeCtx, nodeInd, False)
+            elif (len(inverseWeightMap[cVert.verts[j].targetMatrix]) == 0):
+                if (data.scaleX > 4096):
+                    cVert.verts[j].targetMatrix = FindNode(nodeCtx, cVert.verts[j].targetMatrix, True)
+                else:
+                    cVert.verts[j].targetMatrix = 0
             else:
                 cVert.verts[j].targetMatrix = FindNode(nodeCtx, cVert.verts[j].targetMatrix, True)
         
