@@ -1,4 +1,5 @@
 import bpy
+import mathutils
 
 class NSBMDDataVert():
     def __init__(self):
@@ -46,29 +47,42 @@ class NSBMDModelData():
         self.boundsHeight = 0
         self.boundsZWidth = 0
 
+class NodeStackValue():
+    def __init__(self):
+        self.value = -1
+        self.combo = False
+
+class NodeContext():
+    def __init__(self):
+        self.curr_mtx = 0
+        self.nodeStackPositions = []
+        self.futureNodesUsed = []
+        self.occupiedStack = []
+
 def GetNodeIndex(name,nodes):
     for i in range(0,len(nodes)):
         if nodes[i].name == name:
             return i
 
-def LoadNodeToStack(data, nodes, cVert, inverseWeightMap, nodeInd, nodeStackPositions, futureNodesUsed, occupiedStack):
+def LoadNodeToStack(data, nodes, cVert, cVertIndex, inverseWeightMap, nodeInd, isCombo, nodeCtx):
     # TODO: come up with a solution to indicate final rigs
-    if nodeStackPositions[nodeInd] == -1:
+    if isCombo == True or nodeCtx.nodeStackPositions[nodeInd] == -1:
         # set up parents bone chain first thing so we don't wind up trying to use the same matrix position
         parentStackPos = 0
-        if (nodes[nodeInd].parent != -1):
-            parentStackPos = LoadNodeToStack(data, nodes, cVert, inverseWeightMap, nodes[nodeInd].parent, nodeStackPositions, futureNodesUsed, occupiedStack)
+        parentIsCurrent = False
+        if (isCombo == False and nodes[nodeInd].parent != -1):
+            parentStackPos,parentIsCurrent = LoadNodeToStack(data, nodes, cVert, cVertIndex, inverseWeightMap, nodes[nodeInd].parent, False, nodeCtx)
         stackPosFound = -1
         # first, try finding a free spot
         for k in range(1,31): # 0 is always reserved for base matrix
-            if (occupiedStack[k] == -0.5):
+            if (nodeCtx.occupiedStack[k].value == -1):
                 stackPosFound = k
                 break
         if stackPosFound == -1:
             # that failed; prioritize a stale index
             for k in range(1,31):
-                if occupiedStack[k] >= 0:
-                    matrixCombo = occupiedStack[k]
+                if nodeCtx.occupiedStack[k].combo == True:
+                    matrixCombo = nodeCtx.occupiedStack[k].value
                     reliantOnMatrix = False
                     for dep in cVert.matrixDeps:
                         if dep == matrixCombo:
@@ -82,17 +96,24 @@ def LoadNodeToStack(data, nodes, cVert, inverseWeightMap, nodeInd, nodeStackPosi
             # that failed; prioritize a bone that's not necessary
             # TODO: KEEP bones that are a parent of a dependency at this point
             for k in range(1,31):
-                if occupiedStack[k] < 0:
-                    stackNode = abs((-occupiedStack[k])-1)
-                    if (stackNode == nodes[nodeInd].parent):
+                if occupiedStack[k].combo == False:
+                    stackNode = occupiedStack[k].value
+                    if (isCombo == False and stackNode == nodes[nodeInd].parent):
                         continue
                     stackIsRequired = False
-                    for dep in cVert.matrixDeps:
+                    for l in range(cVertInd, len(cVert.matrixDeps)): # don't bother keeping bones that are already used
+                        dep = cVert.matrixDeps[l]
                         for depName,depWeight in inverseWeightMap[dep]:
                             depNodeInd = GetNodeIndex(depName, nodes)
                             if depNodeInd == stackNode:
                                 stackIsRequired = True
                                 break
+                    for l in range(0,cVertInd): # we have to preserve 256 weight bones!
+                        dep = cVert.matrixDeps[l]
+                        for depName,depWeight in inverseWeightMap[dep]:
+                            depNodeInd = GetNodeIndex(depName, nodes)
+                            if depNodeInd == stackNode and depWeight == 256:
+                                stackIsRequired = True
                     if stackIsRequired == False:
                         stackPosFound = k
                         break
@@ -100,49 +121,120 @@ def LoadNodeToStack(data, nodes, cVert, inverseWeightMap, nodeInd, nodeStackPosi
         
         # stackPos should ALWAYS be found by now (and if it hasn't, that's a separate problem)
         
-        if parentStackPos < 0: # < 0 means it's in curr matrix
-            data.NSBCommands.append(0x26)
-            data.NSBCommands.append(nodeInd)
-            data.NSBCommands.append(nodes[nodeInd].parent)
-            data.NSBCommands.append(0)
-            data.NSBCommands.append(stackPosFound)
+        if (isCombo == False):
+            if parentIsCurrent == True and False==True:
+                data.NSBCommands.append(0x26)
+                data.NSBCommands.append(nodeInd)
+                data.NSBCommands.append(max(nodes[nodeInd].parent,0))
+                data.NSBCommands.append(0)
+                data.NSBCommands.append(stackPosFound)
+            else:
+                data.NSBCommands.append(0x66)
+                data.NSBCommands.append(nodeInd)
+                data.NSBCommands.append(max(nodes[nodeInd].parent,0))
+                data.NSBCommands.append(0)
+                data.NSBCommands.append(stackPosFound)
+                data.NSBCommands.append(parentStackPos)
+            nodeCtx.nodeStackPositions[nodeInd] = stackPosFound
+            nodeCtx.occupiedStack[stackPosFound].value = nodeInd
+            nodeCtx.occupiedStack[stackPosFound].combo = False
+            
+            return stackPosFound,True
         else:
-            data.NSBCommands.append(0x66)
-            data.NSBCommands.append(nodeInd)
-            data.NSBCommands.append(nodes[nodeInd].parent)
-            data.NSBCommands.append(0)
-            data.NSBCommands.append(parentStackPos)
-            data.NSBCommands.append(stackPosFound)
-        nodeStackPositions[nodeInd] = stackPosFound
-        occupiedStack[stackPosFound] = -(stackPosFound+1)
+            # don't write anything, just reserve a slot
+            nodeCtx.occupiedStack[stackPosFound].value = nodeInd
+            nodeCtx.occupiedStack[stackPosFound].combo = True
+            return stackPosFound,False
         
-        return -(nodeStackPositions[nodeInd]+1)
-        
-    return nodeStackPositions[nodeInd]
+    return nodeCtx.nodeStackPositions[nodeInd],False
+
+def FindNode(nodeCtx, nodeInd, isCombo):
+    for i in range(len(nodeCtx.occupiedStack)):
+        if nodeCtx.occupiedStack[i].value == nodeInd and nodeCtx.occupiedStack[i].combo == isCombo:
+            return i
+    return -1
 
 def ProcessNodes(data, nodes, inverseWeightMap):
-    curr_mtx = len(nodes)-1
-    nodeStackPositions = []
-    futureNodesUsed = []
-    for i in range(0,len(nodes)):
-        nodeStackPositions.append(-1)
-        futureNodesUsed.append(False)
-    nodeStackPositions[curr_mtx] = 0
-    occupiedStack = []
-    for i in range(0,31):
-        occupiedStack.append(-0.5)
-    occupiedStack[0] = -(len(nodes)+1) # -0.5 == not used, abs((-x)-1) == raw node ind, otherwise == to skin combo
     
+    data.NSBCommands.append(0x26) # set up first node; always parent most
+    data.NSBCommands.append(len(nodes)-1)
+    data.NSBCommands.append(len(nodes)-1)
+    data.NSBCommands.append(0)
+    data.NSBCommands.append(0)
+    #data.NSBCommands.append(0xB) # just kinda hope this works
+    
+    nodeCtx = NodeContext()
+    nodeCtx.curr_mtx = len(nodes)-1
+    for i in range(0,len(nodes)):
+        nodeCtx.nodeStackPositions.append(-1)
+        nodeCtx.futureNodesUsed.append(False)
+    nodeCtx.nodeStackPositions[nodeCtx.curr_mtx] = 0
+    nodeCtx.occupiedStack = []
+    for i in range(0,31):
+        nodeCtx.occupiedStack.append(NodeStackValue())
+    nodeCtx.occupiedStack[0].value = len(nodes)-1 # -1 == not used
+    
+    currMat = -1
     for i in range(0,len(data.modelVerts)):
-        cVert = data.modelVerts
+        cVert = data.modelVerts[i]
         for j in range(0,len(cVert.matrixDeps)):
-            for name,weight in inverseWeightMap[cVert.matrixDeps[j]]:
-                nodeInd=GetNodeIndex(name,nodes)
-                LoadNodeToStack(data, nodes, cVert, inverseWeightMap, nodeInd, nodeStackPositions, futureNodesUsed, occupiedStack)
+            if (FindNode(nodeCtx, cVert.matrixDeps[j], True) == -1):
+                if (len(inverseWeightMap[cVert.matrixDeps[j]]) == 0):
+                    # do nothing, just use matrix 0
+                    pass
+                elif (inverseWeightMap[cVert.matrixDeps[j]][0][1] == 256):
+                    nodeInd=GetNodeIndex(inverseWeightMap[cVert.matrixDeps[j]][0][0],nodes)
+                    LoadNodeToStack(data, nodes, cVert, j, inverseWeightMap, nodeInd, False, nodeCtx)
+                else:
+                    for name,weight in inverseWeightMap[cVert.matrixDeps[j]]:
+                        nodeInd=GetNodeIndex(name,nodes)
+                        LoadNodeToStack(data, nodes, cVert, j, inverseWeightMap, nodeInd, False, nodeCtx)
+                    targetInd,unused = LoadNodeToStack(data, nodes, cVert, len(inverseWeightMap[cVert.matrixDeps[j]]), inverseWeightMap, cVert.matrixDeps[j], True, nodeCtx)
+                    data.NSBCommands.append(0x09)
+                    data.NSBCommands.append(targetInd)
+                    data.NSBCommands.append(len(inverseWeightMap[cVert.matrixDeps[j]]))
+                    for name,weight in inverseWeightMap[cVert.matrixDeps[j]]:
+                        nodeInd1 = GetNodeIndex(name,nodes)
+                        nodeInd2 = FindNode(nodeCtx, nodeInd1, False)
+                        print(name)
+                        print(weight)
+                        print(nodeInd1)
+                        print(nodeInd2)
+                        print(nodeCtx.occupiedStack[nodeInd2].value)
+                        data.NSBCommands.append(nodeInd2)
+                        data.NSBCommands.append(nodeInd1) # inverse matrix
+                        data.NSBCommands.append(weight)
+                    
+        
+        if (data.modelVerts[i].materialInd != currMat):
+            currMat = cVert.materialInd
+            data.NSBCommands.append(0x4)
+            data.NSBCommands.append(currMat)
+        data.NSBCommands.append(0x5)
+        data.NSBCommands.append(i)
+        
+        for j in range(len(cVert.verts)):
+            if (inverseWeightMap[cVert.verts[j].targetMatrix][0][1] == 256):
+                nodeInd = GetNodeIndex(inverseWeightMap[cVert.verts[j].targetMatrix][0][0], nodes)
+                cVert.verts[j].targetMatrix = FindNode(nodeCtx, nodeInd, False)
+                vPos = nodes[nodeInd].inverseMatrix @ mathutils.Vector((cVert.verts[j].x, cVert.verts[j].y, cVert.verts[j].z, 4096.0))
+                vNorm = nodes[nodeInd].inverseMatrix.to_3x3().inverted().transposed() @ mathutils.Vector((cVert.verts[j].normx, cVert.verts[j].normy, cVert.verts[j].normz))
+                cVert.verts[j].x = int(vPos.x)
+                cVert.verts[j].y = int(vPos.y)
+                cVert.verts[j].z = int(vPos.z)
+                cVert.verts[j].normx = int(vNorm.x)
+                cVert.verts[j].normy = int(vNorm.y)
+                cVert.verts[j].normz = int(vNorm.z)
+            else:
+                cVert.verts[j].targetMatrix = FindNode(nodeCtx, cVert.verts[j].targetMatrix, True)
+        
+    data.NSBCommands.append(1) # END: TODO: handle this when writing so we cover all meshes
 
 def ConvertVerts(meshes, materials, nodes):
     data = NSBMDModelData()
-    all_verts = [mesh.verts for mesh in meshes for mesh.verts in mesh]
+    all_verts = []
+    for mesh in meshes:
+        all_verts += mesh.verts
     all_x = [a.x for a in all_verts]
     all_y = [a.y for a in all_verts]
     all_z = [a.z for a in all_verts]
@@ -373,24 +465,7 @@ def ConvertVerts(meshes, materials, nodes):
     data.NSBCommands.append(2)
     data.NSBCommands.append(0)
     data.NSBCommands.append(1)
-    data.NSBCommands.append(0x26)
-    data.NSBCommands.append(len(nodes)-1)
-    data.NSBCommands.append(len(nodes)-1)
-    data.NSBCommands.append(0)
-    data.NSBCommands.append(0)
-    data.NSBCommands.append(0xB)
     
-    ProcessNodes(nodes,data,inverseWeightMap)
-    
-    
-    currMat = -1
-    for i in range(0,len(data.modelVerts)):
-        if (data.modelVerts[i].materialInd != currMat):
-            currMat = data.modelVerts[i].materialInd
-            data.NSBCommands.append(0x4)
-            data.NSBCommands.append(currMat)
-        data.NSBCommands.append(0x5)
-        data.NSBCommands.append(i)
-    data.NSBCommands.append(1) # END: TODO: handle this when writing so we cover all meshes
+    ProcessNodes(data,nodes,inverseWeightMap)
     
     return data

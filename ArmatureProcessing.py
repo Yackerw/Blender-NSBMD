@@ -32,11 +32,11 @@ def GetNodes(arma):
         if (node.inverseMatrix == mathutils.Matrix.Identity(4)):
             node.validTransform = False
         invMatrix = []
-        for i in range(0,4):
+        """for i in range(0,4):
             invMatrix.append([])
             for j in range(0,4):
                 invMatrix[i].append(node.inverseMatrix[i][j]*4096)
-        node.inverseMatrix = mathutils.Matrix(invMatrix)
+        node.inverseMatrix = mathutils.Matrix(invMatrix)"""
         
         parentId = 0
         for pBone in retValue:

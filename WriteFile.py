@@ -308,11 +308,11 @@ def WriteInverseMatrices(f, nodes):
     for node in nodes:
         for i in range(0,4):
             for j in range(0,3):
-                util.write_signed_integer(f, "<", int(node.inverseMatrix[j][i]))
+                util.write_signed_integer(f, "<", int(node.inverseMatrix[j][i]*4096))
         # UPGRADE NOTE: if scale is added to bones, you will have to remove scale from this next matrix!
         for i in range(0,3):
             for j in range(0,3):
-                util.write_signed_integer(f, "<", int(node.inverseMatrix[j][i]))
+                util.write_signed_integer(f, "<", int(node.inverseMatrix[j][i]*4096))
     
 
 def WriteBMD(f, GXLists, convertedData, materials, nodes):
