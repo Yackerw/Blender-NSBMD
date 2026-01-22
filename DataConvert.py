@@ -399,7 +399,21 @@ def ConvertVerts(meshes, materials, nodes):
                             else:
                                 vData.tris.append(len(vData.verts))
                                 vData.vertConversion[vertData.tris[i+k]] = len(vData.verts)
-                                vData.verts.append(vertsAsArray[k])
+                                newVert = NSBMDDataVert()
+                                newVert.x = vertsAsArray[k].x
+                                newVert.y = vertsAsArray[k].y
+                                newVert.z = vertsAsArray[k].z
+                                newVert.normx = vertsAsArray[k].normx
+                                newVert.normy = vertsAsArray[k].normy
+                                newVert.normz = vertsAsArray[k].normz
+                                newVert.u = vertsAsArray[k].u
+                                newVert.v = vertsAsArray[k].v
+                                newVert.colr = vertsAsArray[k].colr
+                                newVert.colg = vertsAsArray[k].colg
+                                newVert.colb = vertsAsArray[k].colb
+                                newVert.cola = vertsAsArray[k].cola
+                                newVert.sourceMatrix = vertsAsArray[k].sourceMatrix
+                                vData.verts.append(newVert)
                 if (foundExisting):
                     continue
                 # check for partial match
@@ -467,7 +481,21 @@ def ConvertVerts(meshes, materials, nodes):
                             else:
                                 vData.quads.append(len(vData.verts))
                                 vData.vertConversion[vertData.quads[i+k]] = len(vData.verts)
-                                vData.verts.append(vertsAsArray[k])
+                                newVert = NSBMDDataVert()
+                                newVert.x = vertsAsArray[k].x
+                                newVert.y = vertsAsArray[k].y
+                                newVert.z = vertsAsArray[k].z
+                                newVert.normx = vertsAsArray[k].normx
+                                newVert.normy = vertsAsArray[k].normy
+                                newVert.normz = vertsAsArray[k].normz
+                                newVert.u = vertsAsArray[k].u
+                                newVert.v = vertsAsArray[k].v
+                                newVert.colr = vertsAsArray[k].colr
+                                newVert.colg = vertsAsArray[k].colg
+                                newVert.colb = vertsAsArray[k].colb
+                                newVert.cola = vertsAsArray[k].cola
+                                newVert.sourceMatrix = vertsAsArray[k].sourceMatrix
+                                vData.verts.append(newVert)
                 if (foundExisting):
                     continue
                 # check for partial match
