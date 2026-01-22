@@ -12,6 +12,8 @@ class NSBMaterial():
         self.name = "Material"
         self.use_vcol = False
         self.texture_name = "Texture"
+        self.billboard_mode = 0
+        self.palette_override = ""
 
 
 def GetMaterialInfo(model):
@@ -93,6 +95,8 @@ def GetMaterialInfo(model):
         emiB = int(emirgba[2]*255)
 
         newMat.use_vcol = get_value(shader_node.inputs['Use Vertex Color'])
+        newMat.billboard_mode = int(shader_node.billboard_mode)
+        newMat.palette_override = shader_node.palette_override
         
         useSpecTable = int(shader_node.use_spec_table)
         

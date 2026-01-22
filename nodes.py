@@ -169,7 +169,8 @@ class ShaderNodeNSBMDShader(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
     depth_test_equals: BoolProperty(name="Depth test as equals", default=False, options=set())
     fog_enabled: BoolProperty(name="Enable Fog", default=False, options=set())
 
-    billboard_mode: EnumProperty(name="Billboard Render", update=update_billboard, items=billboard_modes)
+    billboard_mode: EnumProperty(name="Billboard Render", update=update_billboard, items=billboard_modes, options=set())
+    palette_override: StringProperty(name="Palette Name", description="Name of palette to override default palette name", options=set())
 
     advanced: BoolProperty(name="Advanced", default=False, options=set())
 
@@ -183,6 +184,7 @@ class ShaderNodeNSBMDShader(CustomNodetreeNodeBaseNN, ShaderNodeCustomGroup):
         self.node_tree = bpy.data.node_groups['.NSBMD_SHADER_MULTI']
         self.lighting_mode = self.lighting_modes(context)[0][0]
         self.billboard_mode = self.billboard_modes(context)[0][0]
+        self.palette_override = ""
         self["backface"] = False
         self["frontface"] = True
 
