@@ -17,6 +17,7 @@ class NSBMDDataVert():
         self.colb = 0
         self.cola = 0
         self.targetMatrix = 0
+        self.sourceMatrix = 0
 
 class NSBMDVertList():
     def __init__(self):
@@ -67,7 +68,8 @@ def GetNodeIndex(name,nodes):
 
 def LoadNodeToStack(data, nodes, cVert, cVertInd, inverseWeightMap, nodeInd, isCombo, nodeCtx):
     # TODO: come up with a solution to indicate final rigs
-    if isCombo == True or nodeCtx.nodeStackPositions[nodeInd] == -1:
+    foundPos = FindNode(nodeCtx, nodeInd, isCombo)
+    if foundPos == -1:
         # set up parents bone chain first thing so we don't wind up trying to use the same matrix position
         parentStackPos = 0
         parentIsCurrent = False
@@ -95,12 +97,9 @@ def LoadNodeToStack(data, nodes, cVert, cVertInd, inverseWeightMap, nodeInd, isC
                     break
         if stackPosFound == -1:
             # that failed; prioritize a bone that's not necessary
-            # TODO: KEEP bones that are a parent of a dependency at this point
             for k in range(1,31):
-                if occupiedStack[k].combo == False:
-                    stackNode = occupiedStack[k].value
-                    if (isCombo == False and stackNode == nodes[nodeInd].parent):
-                        continue
+                if nodeCtx.occupiedStack[k].combo == False:
+                    stackNode = nodeCtx.occupiedStack[k].value
                     stackIsRequired = False
                     for l in range(cVertInd, len(cVert.matrixDeps)): # don't bother keeping bones that are already used
                         dep = cVert.matrixDeps[l]
@@ -122,6 +121,12 @@ def LoadNodeToStack(data, nodes, cVert, cVertInd, inverseWeightMap, nodeInd, isC
         # TODO: combos that are used later on but not now, and then parents of dependencies (anything that isn't a dependency)
         
         # stackPos should ALWAYS be found by now (and if it hasn't, that's a separate problem)
+        
+        if (stackPosFound == -1):
+            print("Valid stack pos not found?")
+            for i in range(0, 31):
+                print(nodeCtx.occupiedStack[k].value)
+                print(nodeCtx.occupiedStack[k].combo)
         
         if (isCombo == False):
             if parentIsCurrent == True:
@@ -148,7 +153,7 @@ def LoadNodeToStack(data, nodes, cVert, cVertInd, inverseWeightMap, nodeInd, isC
             nodeCtx.occupiedStack[stackPosFound].combo = True
             return stackPosFound,False
         
-    return nodeCtx.nodeStackPositions[nodeInd],False
+    return foundPos,False
 
 def FindNode(nodeCtx, nodeInd, isCombo):
     for i in range(len(nodeCtx.occupiedStack)):
@@ -209,7 +214,9 @@ def ProcessNodes(data, nodes, inverseWeightMap):
                     for name,weight in inverseWeightMap[cVert.matrixDeps[j]]:
                         nodeInd=GetNodeIndex(name,nodes)
                         LoadNodeToStack(data, nodes, cVert, j, inverseWeightMap, nodeInd, False, nodeCtx)
-                    targetInd,unused = LoadNodeToStack(data, nodes, cVert, len(inverseWeightMap[cVert.matrixDeps[j]]), inverseWeightMap, cVert.matrixDeps[j], True, nodeCtx)
+                    targetInd,unused = LoadNodeToStack(data, nodes, cVert, j, inverseWeightMap, cVert.matrixDeps[j], True, nodeCtx)
+                    if (targetInd == -1):
+                        print("WHY")
                     data.NSBCommands.append(0x09)
                     data.NSBCommands.append(targetInd)
                     data.NSBCommands.append(len(inverseWeightMap[cVert.matrixDeps[j]]))
@@ -235,19 +242,20 @@ def ProcessNodes(data, nodes, inverseWeightMap):
         data.NSBCommands.append(i)
         
         for j in range(len(cVert.verts)):
-            if (len(inverseWeightMap[cVert.verts[j].targetMatrix]) == 1):
+            if (len(inverseWeightMap[cVert.verts[j].sourceMatrix]) == 1):
                 if (data.scaleX > 4096):
-                    cVert.verts[j].targetMatrix = FindNode(nodeCtx, cVert.verts[j].targetMatrix, True)
+                    cVert.verts[j].targetMatrix = FindNode(nodeCtx, cVert.verts[j].sourceMatrix, True)
                 else:
-                    nodeInd = GetNodeIndex(inverseWeightMap[cVert.verts[j].targetMatrix][0][0], nodes)
+                    nodeInd = GetNodeIndex(inverseWeightMap[cVert.verts[j].sourceMatrix][0][0], nodes)
                     cVert.verts[j].targetMatrix = FindNode(nodeCtx, nodeInd, False)
-            elif (len(inverseWeightMap[cVert.verts[j].targetMatrix]) == 0):
+            elif (len(inverseWeightMap[cVert.verts[j].sourceMatrix]) == 0):
                 if (data.scaleX > 4096):
-                    cVert.verts[j].targetMatrix = FindNode(nodeCtx, cVert.verts[j].targetMatrix, True)
+                    cVert.verts[j].targetMatrix = FindNode(nodeCtx, cVert.verts[j].sourceMatrix, True)
                 else:
                     cVert.verts[j].targetMatrix = 0
             else:
-                cVert.verts[j].targetMatrix = FindNode(nodeCtx, cVert.verts[j].targetMatrix, True)
+                preVert = cVert.verts[j].sourceMatrix
+                cVert.verts[j].targetMatrix = FindNode(nodeCtx, cVert.verts[j].sourceMatrix, True)
         
     data.NSBCommands.append(1) # END: TODO: handle this when writing so we cover all meshes
 
@@ -358,10 +366,10 @@ def ConvertVerts(meshes, materials, nodes):
                 weightMap[cVert.weights] = len(inverseWeightMap)
                 inverseWeightMap.append(cVert.weights)
             
-            newVert.targetMatrix = weightMap[cVert.weights]
+            newVert.sourceMatrix = weightMap[cVert.weights]
             
-            if not newVert.targetMatrix in vertData.matrixDeps:
-                vertData.matrixDeps.append(newVert.targetMatrix)
+            if not newVert.sourceMatrix in vertData.matrixDeps:
+                vertData.matrixDeps.append(newVert.sourceMatrix)
             
             vertList.append(newVert)
             
@@ -383,7 +391,7 @@ def ConvertVerts(meshes, materials, nodes):
                 foundExisting = False
                 # check if vert combo already exists
                 for vData in vertDatas:
-                    if (v1.targetMatrix in vData.matrixDeps) and (v2.targetMatrix in vData.matrixDeps) and (v3.targetMatrix in vData.matrixDeps):
+                    if (v1.sourceMatrix in vData.matrixDeps) and (v2.sourceMatrix in vData.matrixDeps) and (v3.sourceMatrix in vData.matrixDeps):
                         foundExisting = True
                         for k in range(0,3):
                             if (vertData.tris[i+k] in vData.vertConversion):
@@ -396,12 +404,12 @@ def ConvertVerts(meshes, materials, nodes):
                     continue
                 # check for partial match
                 closestMatch = -1
-                closestMatchCount = 0
+                closestMatchCount = -1
                 for k in range(0,len(vertDatas)):
                     vData = vertDatas[k]
                     currMatchCount = 0
                     for v in vertsAsArray:
-                        if v.targetMatrix in vData.matrixDeps:
+                        if v.sourceMatrix in vData.matrixDeps:
                             currMatchCount += 1
                     if (len(vData.matrixDeps)+(3-currMatchCount)<=26) and (currMatchCount > closestMatchCount):
                         closestMatch = k
@@ -420,9 +428,23 @@ def ConvertVerts(meshes, materials, nodes):
                     else:
                         vData.tris.append(len(vData.verts))
                         vData.vertConversion[vertData.tris[i+k]] = len(vData.verts)
-                        vData.verts.append(vertsAsArray[k])
-                        if (not vertsAsArray[k].targetMatrix in vData.matrixDeps):
-                            vData.matrixDeps.append(vertsAsArray[k].targetMatrix)
+                        newVert = NSBMDDataVert()
+                        newVert.x = vertsAsArray[k].x
+                        newVert.y = vertsAsArray[k].y
+                        newVert.z = vertsAsArray[k].z
+                        newVert.normx = vertsAsArray[k].normx
+                        newVert.normy = vertsAsArray[k].normy
+                        newVert.normz = vertsAsArray[k].normz
+                        newVert.u = vertsAsArray[k].u
+                        newVert.v = vertsAsArray[k].v
+                        newVert.colr = vertsAsArray[k].colr
+                        newVert.colg = vertsAsArray[k].colg
+                        newVert.colb = vertsAsArray[k].colb
+                        newVert.cola = vertsAsArray[k].cola
+                        newVert.sourceMatrix = vertsAsArray[k].sourceMatrix
+                        vData.verts.append(newVert)
+                        if (not vertsAsArray[k].sourceMatrix in vData.matrixDeps):
+                            vData.matrixDeps.append(vertsAsArray[k].sourceMatrix)
             
             for i in range(0,len(vertData.quads),4):
                 v1 = vertData.verts[vertData.quads[i]]
@@ -437,7 +459,7 @@ def ConvertVerts(meshes, materials, nodes):
                 foundExisting = False
                 # check if vert combo already exists
                 for vData in vertDatas:
-                    if (v1.targetMatrix in vData.matrixDeps) and (v2.targetMatrix in vData.matrixDeps) and (v3.targetMatrix in vData.matrixDeps) and (v4.targetMatrix in vData.matrixDeps):
+                    if (v1.sourceMatrix in vData.matrixDeps) and (v2.sourceMatrix in vData.matrixDeps) and (v3.sourceMatrix in vData.matrixDeps) and (v4.sourceMatrix in vData.matrixDeps):
                         foundExisting = True
                         for k in range(0,4):
                             if (vertData.quads[i+k] in vData.vertConversion):
@@ -450,12 +472,12 @@ def ConvertVerts(meshes, materials, nodes):
                     continue
                 # check for partial match
                 closestMatch = -1
-                closestMatchCount = 0
+                closestMatchCount = -1
                 for k in range(0,len(vertDatas)):
                     vData = vertDatas[k]
                     currMatchCount = 0
                     for v in vertsAsArray:
-                        if v.targetMatrix in vData.matrixDeps:
+                        if v.sourceMatrix in vData.matrixDeps:
                             currMatchCount += 1
                     if (len(vData.matrixDeps)+(4-currMatchCount)<=26) and (currMatchCount > closestMatchCount):
                         closestMatch = k
@@ -474,9 +496,23 @@ def ConvertVerts(meshes, materials, nodes):
                     else:
                         vData.quads.append(len(vData.verts))
                         vData.vertConversion[vertData.quads[i+k]] = len(vData.verts)
-                        vData.verts.append(vertsAsArray[k])
-                        if (not vertsAsArray[k].targetMatrix in vData.matrixDeps):
-                            vData.matrixDeps.append(vertsAsArray[k].targetMatrix)
+                        newVert = NSBMDDataVert()
+                        newVert.x = vertsAsArray[k].x
+                        newVert.y = vertsAsArray[k].y
+                        newVert.z = vertsAsArray[k].z
+                        newVert.normx = vertsAsArray[k].normx
+                        newVert.normy = vertsAsArray[k].normy
+                        newVert.normz = vertsAsArray[k].normz
+                        newVert.u = vertsAsArray[k].u
+                        newVert.v = vertsAsArray[k].v
+                        newVert.colr = vertsAsArray[k].colr
+                        newVert.colg = vertsAsArray[k].colg
+                        newVert.colb = vertsAsArray[k].colb
+                        newVert.cola = vertsAsArray[k].cola
+                        newVert.sourceMatrix = vertsAsArray[k].sourceMatrix
+                        vData.verts.append(newVert)
+                        if (not vertsAsArray[k].sourceMatrix in vData.matrixDeps):
+                            vData.matrixDeps.append(vertsAsArray[k].sourceMatrix)
             
             for vData in vertDatas:
                 data.modelVerts.append(vData)
