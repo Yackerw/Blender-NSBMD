@@ -19,9 +19,13 @@ def GetNodes(arma):
         node = Node()
         node.blenderBone = bone
         node.name = bone.name
-        node.position = mathutils.Vector((bone.head.x*4096, bone.head.y*4096, bone.head.z*4096)) # todo: i think we need to factor in the scale value from the header here
+        mtx = bone.matrix_local
+        if (bone.parent != None):
+            mtx = bone.parent.matrix_local.inverted_safe() @ mtx
+        pos = mtx.to_translation()
+        node.position = mathutils.Vector((pos.x*4096, pos.y*4096, pos.z*4096))
         #node.scale doesn't need changing and never will as blender doesn't encode scale into bones
-        node.rotation = bone.matrix.to_quaternion().to_matrix() # hehe
+        node.rotation = mtx.to_quaternion().to_matrix() # hehe
         rotationMatrix = []
         for i in range(0,3):
             rotationMatrix.append([])

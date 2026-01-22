@@ -50,6 +50,8 @@ def ProcessMesh(mesh, obj):
         subMesh = NSSubModel()
         for face in mesh.polygons:
             if face.material_index == matId:
+                if (face.loop_total < 3):
+                    continue
                 for loop_ind in range(face.loop_start, face.loop_start+face.loop_total):
                     newVert = NSVert()
                     loop = mesh.loops[loop_ind]
