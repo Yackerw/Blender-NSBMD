@@ -1,7 +1,98 @@
 from struct import unpack, pack
 from typing import BinaryIO, Tuple, Any, Union
+import bpy
 
 # blender functions
+
+
+def show_not_read(tool_name):
+    """Shows a pop-up to tell the user the file couldn't be read"""
+    def draw(self, context):
+        self.layout.label(text="File could not be read!")
+    bpy.context.window_manager.popup_menu(draw_func=draw, title=tool_name, icon="ERROR")
+
+# file read functions
+
+
+def read_str(file: BinaryIO, count: int) -> str:
+    """Reads and returns a string.
+
+        Parameters
+        ----------
+        file : BinaryIO
+            The file read.
+
+        count : int
+            How many bytes to read.
+
+        Returns
+        -------
+        str
+            The string read.
+        """
+
+    return file.read(count).decode("utf-8", "ignore")
+
+
+def read_int(file: BinaryIO, endian="<") -> int:
+    """Reads and returns an integer.
+
+    Parameters
+    ----------
+    file : BinaryIO
+        The file read.
+
+    endian :
+        Endian of what's being read.
+
+    Returns
+    -------
+    int
+        The integer read.
+    """
+
+    return unpack(endian + "I", file.read(4))[0]
+
+
+def read_short(file: BinaryIO, endian="<") -> int:
+    """Reads and returns a short.
+
+        Parameters
+        ----------
+        file : BinaryIO
+            The file read.
+
+        endian :
+            Endian of what's being read.
+
+        Returns
+        -------
+        int
+            The short read.
+        """
+
+    return unpack(endian + "H", file.read(2))[0]
+
+
+def read_byte(file: BinaryIO, endian="<") -> int:
+    """Reads and returns a byte.
+
+        Parameters
+        ----------
+        file : BinaryIO
+            The file read.
+
+        endian :
+            Endian of what's being read.
+
+        Returns
+        -------
+        int
+            The byte read.
+        """
+
+    return unpack(endian + "B", file.read(1))[0]
+
 
 # file write functions
 
