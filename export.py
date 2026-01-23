@@ -5,6 +5,8 @@ from . import GXCommandList
 from . import WriteFile
 from . import MaterialProcessing
 from . import ArmatureProcessing
+from . import NSBTX
+from . import util
 
 class NSVert:
     def __init__(self):
@@ -116,6 +118,12 @@ class ExportModel:
             bpy.context.window_manager.popup_menu(draw_func=draw, title="NSBMD Exporter", icon="ERROR")
             return {'CANCELLED'}
         
+        texs = NSBTX.OpenNSBTX(selected_obj.data.nsbtx_path)
+        
+        if texs == None:
+            util.show_not_read_nsbtx("NSBMD Exporter")
+            return {'CANCELLED'}
+        
         nodes = None
         
         for mod in selected_obj.modifiers:
@@ -131,12 +139,15 @@ class ExportModel:
         
         mesh = ProcessMesh(blenderMesh, selected_obj)
 
-        mats = MaterialProcessing.GetMaterialInfo(blenderMesh)
+        mats = MaterialProcessing.GetMaterialInfo(blenderMesh, texs)
+        
+        if (mats == None):
+            return {'CANCELLED'}
         
         newConv = DataConvert.ConvertVerts(mesh.subModels, mats, nodes)
         
         GXLists = GXCommandList.ConvertToGXList(newConv, False)
         
-        WriteFile.WriteFile(GXLists, newConv, mats, nodes, self.filepath)
+        WriteFile.WriteFile(GXLists, newConv, mats, nodes, texs, self.filepath)
 
         return{'FINISHED'}
