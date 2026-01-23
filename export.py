@@ -106,8 +106,9 @@ def ProcessMesh(mesh, obj):
     return NSMesh
 
 class ExportModel:
-    def __init__(self, context, filepath, settings):
+    def __init__(self, context, filepath, settings, pack_tex):
         self.filepath = filepath
+        self.pack_tex = pack_tex
 
     def execute(self):
         selected_obj = bpy.context.active_object
@@ -148,6 +149,6 @@ class ExportModel:
         
         GXLists = GXCommandList.ConvertToGXList(newConv, False)
         
-        WriteFile.WriteFile(GXLists, newConv, mats, nodes, texs, self.filepath)
+        WriteFile.WriteFile(GXLists, newConv, mats, nodes, texs, self.pack_tex, self.filepath)
 
         return{'FINISHED'}

@@ -18,6 +18,11 @@ class ExportNSBMD(bpy.types.Operator, ExportHelper):
         maxlen=255)
 
     # idk if you want any toggles
+    
+    pack_tex: BoolProperty(
+        name="Pack textures",
+        description="Packs textures from nsbtx into nsbmd.",
+        default=True)
 
     def draw(self, context):
         layout = self.layout
@@ -32,12 +37,13 @@ class ExportNSBMD(bpy.types.Operator, ExportHelper):
         info_text = "Please select the texture format in the NSBMD Tab in 3d view (with your object active)"
         wrapped_text = textwrap.TextWrapper(width=letter_count).wrap(text=info_text)
         [box.label(text=a) for a in wrapped_text]
+        layout.row().prop(self, "pack_tex")
         #box.row().prop(self, "setting_i_suppose")
 
     def execute(self, context):
         # preferences = bpy.context.preferences.addons[__package__.partition(".")[0]].preferences
         settings = {}
-        return export.ExportModel(context, self.filepath, settings).execute()
+        return export.ExportModel(context, self.filepath, settings, self.pack_tex).execute()
 
 
 def menu_func_export(self, context):  # add to dynamic menu

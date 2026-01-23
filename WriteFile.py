@@ -404,7 +404,7 @@ def WriteBMD(f, GXLists, convertedData, materials, nodes, texs):
     f.seek(0, 2)
     
 
-def WriteFile(GXLists, convertedData, materials, nodes, texs, filepath):
+def WriteFile(GXLists, convertedData, materials, nodes, texs, pack_tex, filepath):
     f = open(filepath, "wb")
     # simple header stuff
     util.write_integer(f, "<", 0x30444d42)
@@ -416,7 +416,10 @@ def WriteFile(GXLists, convertedData, materials, nodes, texs, filepath):
     # header size
     util.write_short(f, "<", 0x10)
     # 1 = MDL only, 2 = TEX as well
-    util.write_short(f, "<", 2)
+    if (pack_tex == True):
+        util.write_short(f, "<", 2)
+    else:
+        util.write_short(f, "<", 2)
     # offset to BMD0
     util.write_integer(f, "<", 0x18)
     texOffs = f.tell()
@@ -425,13 +428,14 @@ def WriteFile(GXLists, convertedData, materials, nodes, texs, filepath):
     
     WriteBMD(f, GXLists, convertedData, materials, nodes, texs)
     
-    curr_offs = f.tell()
-    f.seek(texOffs, 0)
-    util.write_integer(f, "<", curr_offs)
-    f.seek(0,2)
-    
-    for b in texs.fileContents:
-        util.write_byte(f, "<", b)
+    if (pack_tex == True):
+        curr_offs = f.tell()
+        f.seek(texOffs, 0)
+        util.write_integer(f, "<", curr_offs)
+        f.seek(0,2)
+        
+        for b in texs.fileContents:
+            util.write_byte(f, "<", b)
     
     curr_offs = f.tell()
     f.seek(file_size_offs)
