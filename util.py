@@ -5,10 +5,22 @@ import bpy
 # blender functions
 
 
-def show_not_read(tool_name):
+def show_not_read_nsbtx(tool_name):
     """Shows a pop-up to tell the user the file couldn't be read"""
     def draw(self, context):
-        self.layout.label(text="File could not be read!")
+        self.layout.label(text="NSBTX File could not be read!")
+    bpy.context.window_manager.popup_menu(draw_func=draw, title=tool_name, icon="ERROR")
+
+def show_tex_not_found(tool_name,texName):
+    """Shows a pop-up to tell the user the file couldn't be read"""
+    def draw(self, context):
+        self.layout.label(text="Texture "+texName+" not found in NSBTX!")
+    bpy.context.window_manager.popup_menu(draw_func=draw, title=tool_name, icon="ERROR")
+
+def show_pal_not_found(tool_name,texName):
+    """Shows a pop-up to tell the user the file couldn't be read"""
+    def draw(self, context):
+        self.layout.label(text="Palette "+texName+" not found in NSBTX!")
     bpy.context.window_manager.popup_menu(draw_func=draw, title=tool_name, icon="ERROR")
 
 # file read functions
@@ -30,11 +42,10 @@ def read_str(file: BinaryIO, count: int) -> str:
         str
             The string read.
         """
+    return file.read(count).decode("utf-8", "ignore").rstrip('\x00')
 
-    return file.read(count).decode("utf-8", "ignore")
 
-
-def read_int(file: BinaryIO, endian="<") -> int:
+def read_integer(file: BinaryIO, endian="<") -> int:
     """Reads and returns an integer.
 
     Parameters

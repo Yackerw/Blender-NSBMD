@@ -1,4 +1,5 @@
 import bpy
+from . import util
 
 class NSBMaterial():
     def __init__(self):
@@ -14,9 +15,11 @@ class NSBMaterial():
         self.texture_name = "Texture"
         self.billboard_mode = 0
         self.palette_override = ""
+        self.tex_ind = 0
+        self.pal_ind = -1
 
 
-def GetMaterialInfo(model):
+def GetMaterialInfo(model, texs):
     retValue = []
     for mat in model.materials:
         def get_list(node_input):
@@ -107,7 +110,6 @@ def GetMaterialInfo(model):
 
         if not texture_node.image:
             raise ReferenceError("Please add Image to Texture Node in material " + mat.name)
-        newMat.tex_width, newMat.tex_height = texture_node.image.size
         newMat.texture_name = texture_node.image.name.rsplit('.', 1)[0]
         
         texRepeatModeU = int(vector_node.u_type) # clamp, repeat, mirror
@@ -125,6 +127,30 @@ def GetMaterialInfo(model):
         newMat.TEXIMAGE_PARAMS = (repeatModeUDS << 16) | (repeatModeVDS << 17) | (texTransformMode << 30)
         
         newMat.name = mat.name
+        
+        if not (newMat.texture_name in texs.texNames):
+            print(texs.texNames[0])
+            print(newMat.texture_name)
+            util.show_tex_not_found("NSBMD Exporter", newMat.texture_name)
+            return None
+        
+        newMat.tex_ind = texs.texNames.index(newMat.texture_name)
+        
+        # no palette involved for direct color!
+        if (texs.texFormats[newMat.tex_ind] != 7):
+        
+            if (newMat.palette_override == ""):
+                newMat.palette_override = newMat.texture_name + "_pl"
+            
+            if not (newMat.palette_override in texs.paletteNames):
+                util.show_pal_not_found("NSBMD Exporter", newMat.palette_override)
+                return None
+            
+            newMat.pal_ind = texs.paletteNames.index(newMat.palette_override)
+        
+        #newMat.tex_width, newMat.tex_height = texture_node.image.size
+        newMat.tex_width = texs.texSizesX[newMat.tex_ind]
+        newMat.tex_height = texs.texSizesY[newMat.tex_ind]
         
         retValue.append(newMat)
     return retValue

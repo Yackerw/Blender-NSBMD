@@ -179,7 +179,7 @@ def WriteCommands(f, commands):
         i += 1
     util.write_aligned(f, 4)
 
-def WriteMaterials(f, materials):
+def WriteMaterials(f, materials, texs):
     materialCount = len(materials)
     texture_pairing_offs = f.tell()
     util.write_short(f, "<", 0) # texture pairing offset
@@ -198,50 +198,46 @@ def WriteMaterials(f, materials):
     f.seek(0, 2)
     
     # get unique texture count
-    # TODO: open nsbtx and order these the same as the nsbtx
-    textures = {}
-    textureCount = 0
+    textures = []
+    palettes = []
+    for i in range(len(texs.texNames)):
+        textures.append([])
+    for i in range(len(texs.paletteNames)):
+        palettes.append([])
+    i = 0
     for mat in materials:
-        if not mat.texture_name in textures:
-            textures[mat.texture_name] = textureCount
-            textureCount += 1
+        textures[mat.tex_ind].append(i)
+        if (mat.pal_ind != -1):
+            palettes[mat.pal_ind].append(i)
+        i += 1
+        #if not mat.texture_name in textures:
+        #    textures[mat.texture_name] = textureCount
+        #    textureCount += 1
     # :/
-    paletteNames = []
-    texNames = []
-    for key, value in textures.items():
-        paletteNames.append(key+"_pl")
-        texNames.append(key)
-    texInfo = WriteInfoBlock(f, textureCount, texNames)
+    texInfo = WriteInfoBlock(f, len(texs.texNames), texs.texNames)
     curr_offs = f.tell()
     f.seek(texture_pairing_offs+2, 0)
     util.write_short(f, "<", curr_offs-texture_pairing_offs)
     f.seek(0, 2)
-    paletteInfo = WriteInfoBlock(f, textureCount, paletteNames)
+    paletteInfo = WriteInfoBlock(f, len(texs.paletteNames), texs.paletteNames)
     j = 0
-    for key, value in textures.items():
+    for matList in textures:
         curr_offs = f.tell()
-        matUsedCount = 0
-        for i in range(0,len(materials)):
-            if materials[i].texture_name == key:
-                print(key)
-                util.write_byte(f, "<", i)
-                matUsedCount += 1
+        for v in matList:
+            util.write_byte(f, "<", v)
         f.seek(texInfo.offsetOffsets[j])
-        util.write_integer(f, "<", curr_offs-texture_pairing_offs | (matUsedCount << 16)) # 1 << 16 = count of items
-        f.seek(0, 2)
+        util.write_integer(f, "<", curr_offs-texture_pairing_offs | (len(matList) << 16)) # 1 << 16 = count of items
         j += 1
+        f.seek(0,2)
     j = 0
-    for key, value in textures.items():
+    for matList in palettes:
         curr_offs = f.tell()
-        matUsedCount = 0
-        for i in range(0,len(materials)):
-            if materials[i].texture_name == key:
-                util.write_byte(f, "<", i)
-                matUsedCount += 1
+        for v in matList:
+            util.write_byte(f, "<", v)
         f.seek(paletteInfo.offsetOffsets[j])
-        util.write_integer(f, "<", curr_offs-texture_pairing_offs | (matUsedCount << 16)) # 1 << 16 = count of items
-        f.seek(0, 2)
+        util.write_integer(f, "<", curr_offs-texture_pairing_offs | (len(matList) << 16)) # 1 << 16 = count of items
         j += 1
+        f.seek(0,2)
     util.write_aligned(f, 4)
     
     i = 0
@@ -315,7 +311,7 @@ def WriteInverseMatrices(f, nodes):
                 util.write_signed_integer(f, "<", int(node.inverseMatrix[j][i]*4096))
     
 
-def WriteBMD(f, GXLists, convertedData, materials, nodes):
+def WriteBMD(f, GXLists, convertedData, materials, nodes, texs):
     util.write_integer(f, "<", 0x304C444D)
     # chunk size...fill in later...
     MDL0_size_offs = f.tell()
@@ -386,7 +382,7 @@ def WriteBMD(f, GXLists, convertedData, materials, nodes):
     f.seek(material_offs_offs, 0)
     util.write_integer(f, "<", curr_offs-model_size_offs)
     f.seek(0, 2)
-    WriteMaterials(f, materials)
+    WriteMaterials(f, materials, texs)
     curr_offs = f.tell()
     f.seek(vertexMesh_offs_offs, 0)
     util.write_integer(f, "<", curr_offs-model_size_offs)
@@ -408,7 +404,7 @@ def WriteBMD(f, GXLists, convertedData, materials, nodes):
     f.seek(0, 2)
     
 
-def WriteFile(GXLists, convertedData, materials, nodes, filepath):
+def WriteFile(GXLists, convertedData, materials, nodes, texs, pack_tex, filepath):
     f = open(filepath, "wb")
     # simple header stuff
     util.write_integer(f, "<", 0x30444d42)
@@ -420,13 +416,26 @@ def WriteFile(GXLists, convertedData, materials, nodes, filepath):
     # header size
     util.write_short(f, "<", 0x10)
     # 1 = MDL only, 2 = TEX as well
-    util.write_short(f, "<", 1)
+    if (pack_tex == True):
+        util.write_short(f, "<", 2)
+    else:
+        util.write_short(f, "<", 2)
     # offset to BMD0
     util.write_integer(f, "<", 0x18)
+    texOffs = f.tell()
     # offset to TEX0
     util.write_integer(f, "<", 0)
     
-    WriteBMD(f, GXLists, convertedData, materials, nodes)
+    WriteBMD(f, GXLists, convertedData, materials, nodes, texs)
+    
+    if (pack_tex == True):
+        curr_offs = f.tell()
+        f.seek(texOffs, 0)
+        util.write_integer(f, "<", curr_offs)
+        f.seek(0,2)
+        
+        for b in texs.fileContents:
+            util.write_byte(f, "<", b)
     
     curr_offs = f.tell()
     f.seek(file_size_offs)
