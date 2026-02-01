@@ -1,5 +1,7 @@
 import bpy
 from . import util
+import mathutils
+
 
 class NSBMaterial():
     def __init__(self):
@@ -17,6 +19,7 @@ class NSBMaterial():
         self.palette_override = ""
         self.tex_ind = 0
         self.pal_ind = -1
+        self.matrix = (0, 0, 0)
 
 
 def GetMaterialInfo(model, texs):
@@ -123,6 +126,9 @@ def GetMaterialInfo(model, texs):
             repeatModeVDS = 5
         
         texTransformMode = int(vector_node.transform_mode) # none, UV, normal, position
+
+        newMat.matrix = mathutils.Matrix.LocRotScale(
+            get_list(vector_node.inputs["UV Offset"]), get_list(vector_node.inputs["UV Rotation"]), get_list(vector_node.inputs["UV Scale"]))
         
         newMat.TEXIMAGE_PARAMS = (repeatModeUDS << 16) | (repeatModeVDS << 17) | (texTransformMode << 30)
         
