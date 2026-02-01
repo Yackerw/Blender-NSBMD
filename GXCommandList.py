@@ -1,5 +1,6 @@
 import bpy
 from enum import Enum
+from . import Stripping
 
 class GXCommands(Enum):
     CMD_TEXCOORD = 1
@@ -124,26 +125,46 @@ def ConvertToGXList(convData, useColor):
         triList = convData.modelVerts[j].tris
         quadList = convData.modelVerts[j].quads
         
-        i = 0
-        # TODO: strips
-        if (len(triList) > 0):
-            GXList.PushCommand(GXCommands.CMD_TRI.value, 0, 0, 0)
-            while (i < len(triList)):
-                GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[triList[i]].targetMatrix, 0, 0)
-                GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[triList[i]].u, vertList[triList[i]].v, 0)
-                GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[triList[i]].normx, vertList[triList[i]].normy, vertList[triList[i]].normz)
-                GXList.PushCommand(GXCommands.CMD_POS.value, vertList[triList[i]].x, vertList[triList[i]].y, vertList[triList[i]].z)
-                i += 1
+        triStrips, indTris = Stripping.CreateStrips(triList, 3)
         
         i = 0
-        if (len(quadList) > 0):
-            GXList.PushCommand(GXCommands.CMD_QUAD.value, 0, 0, 0)
-            while (i < len(quadList)):
-                GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[quadList[i]].targetMatrix, 0, 0)
-                GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[quadList[i]].u, vertList[quadList[i]].v, 0)
-                GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[quadList[i]].normx, vertList[quadList[i]].normy, vertList[quadList[i]].normz)
-                GXList.PushCommand(GXCommands.CMD_POS.value, vertList[quadList[i]].x, vertList[quadList[i]].y, vertList[quadList[i]].z)
+        # TODO: strips
+        if (len(indTris) > 0):
+            GXList.PushCommand(GXCommands.CMD_TRI.value, 0, 0, 0)
+            for i in range(len(indTris)):
+                GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[indTris[i]].targetMatrix, 0, 0)
+                GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[indTris[i]].u, vertList[indTris[i]].v, 0)
+                GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[indTris[i]].normx, vertList[indTris[i]].normy, vertList[indTris[i]].normz)
+                GXList.PushCommand(GXCommands.CMD_POS.value, vertList[indTris[i]].x, vertList[indTris[i]].y, vertList[indTris[i]].z)
                 i += 1
+        
+        if (len(triStrips) > 0):
+            for strip in triStrips:
+                GXList.PushCommand(GXCommands.CMD_TRISTRIP.value, 0, 0, 0)
+                for j in strip:
+                    GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[j].targetMatrix, 0, 0)
+                    GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[j].u, vertList[j].v, 0)
+                    GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[j].normx, vertList[j].normy, vertList[j].normz)
+                    GXList.PushCommand(GXCommands.CMD_POS.value, vertList[j].x, vertList[j].y, vertList[j].z)
+        
+        quadStrips, indQuads = Stripping.CreateStrips(quadList, 4)
+        
+        if (len(indQuads) > 0):
+            GXList.PushCommand(GXCommands.CMD_QUAD.value, 0, 0, 0)
+            for i in range(len(indQuads)):
+                GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[indQuads[i]].targetMatrix, 0, 0)
+                GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[indQuads[i]].u, vertList[indQuads[i]].v, 0)
+                GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[indQuads[i]].normx, vertList[indQuads[i]].normy, vertList[indQuads[i]].normz)
+                GXList.PushCommand(GXCommands.CMD_POS.value, vertList[indQuads[i]].x, vertList[indQuads[i]].y, vertList[indQuads[i]].z)
+        
+        if (len(quadStrips) > 0):
+            for strip in quadStrips:
+                GXList.PushCommand(GXCommands.CMD_QUADSTRIP.value, 0, 0, 0)
+                for j in strip:
+                    GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[j].targetMatrix, 0, 0)
+                    GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[j].u, vertList[j].v, 0)
+                    GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[j].normx, vertList[j].normy, vertList[j].normz)
+                    GXList.PushCommand(GXCommands.CMD_POS.value, vertList[j].x, vertList[j].y, vertList[j].z)
         
         convData.vertCount += len(triList)
         convData.triCount += int(len(triList)/3)
