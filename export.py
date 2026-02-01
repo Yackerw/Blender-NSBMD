@@ -19,7 +19,6 @@ class NSVert:
         self.colr = 0
         self.colg = 0
         self.colb = 0
-        self.cola = 0
         self.u = 0
         self.v = 0
         self.weights = ()
@@ -36,7 +35,7 @@ class NSModel:
         self.subModels = []
         
 
-def ProcessMesh(mesh, obj):
+def ProcessMesh(mesh, obj, mats):
     NSMesh = NSModel()
     import bmesh
     bm = bmesh.new()
@@ -46,6 +45,29 @@ def ProcessMesh(mesh, obj):
     bmesh.ops.triangulate(bm, faces=faces, quad_method='BEAUTY', ngon_method='BEAUTY')
     bm.to_mesh(mesh)
     bm.free()
+    
+    colors = None
+    
+    if len(mesh.color_attributes) > 0:
+        colors = mesh.color_attributes[0]
+        if (colors.data_type != "FLOAT_COLOR"):
+            colorsAsFloat = False
+        col = [0, 0, 0, 0] * len(colors.data)
+        colors.data.foreach_get("color", col)
+        if list(set(col)) == [1.0]:
+            col = None
+        
+        if (colors.domain == "POINT"):
+            # convert to corner
+            newCol = []
+            for face in mesh.polygons:
+                for loop_ind in range(face.loop_start, face.loop_start+3):
+                    newCol.append(col[mesh.loops[loop_ind].vertex_index*4])
+                    newCol.append(col[(mesh.loops[loop_ind].vertex_index*4)+1])
+                    newCol.append(col[(mesh.loops[loop_ind].vertex_index*4)+2])
+                    newCol.append(col[(mesh.loops[loop_ind].vertex_index*4)+3])
+            col = newCol
+        colors = col
 
     for matId in range(0,len(mesh.materials)):
         vertTuples = {}
@@ -60,9 +82,20 @@ def ProcessMesh(mesh, obj):
                     newVert.x = mesh.vertices[loop.vertex_index].undeformed_co.x
                     newVert.y = mesh.vertices[loop.vertex_index].undeformed_co.y
                     newVert.z = mesh.vertices[loop.vertex_index].undeformed_co.z
-                    newVert.normx = loop.normal.x
-                    newVert.normy = loop.normal.y
-                    newVert.normz = loop.normal.z
+                    if (mats[matId].use_vcol == True):
+                        if (colors == None):
+                            newVert.colr = 255
+                            newVert.colg = 255
+                            newVert.colb = 255
+                        else:
+                            newVert.colr = colors[loop_ind*4]*255
+                            newVert.colg = colors[(loop_ind*4)+1]*255
+                            newVert.colb = colors[(loop_ind*4)+2]*255
+                    else:
+                        newVert.normx = loop.normal.x
+                        newVert.normy = loop.normal.y
+                        newVert.normz = loop.normal.z
+                        
                     for uv_layer in mesh.uv_layers:
                         uv = uv_layer.uv[loop_ind].vector
                         newVert.u = uv.x
@@ -138,16 +171,16 @@ class ExportModel:
         
         blenderMesh = selected_obj.to_mesh(preserve_all_data_layers=True,depsgraph=bpy.context.evaluated_depsgraph_get())
         
-        mesh = ProcessMesh(blenderMesh, selected_obj)
-
         mats = MaterialProcessing.GetMaterialInfo(blenderMesh, texs)
+        
+        mesh = ProcessMesh(blenderMesh, selected_obj, mats)
         
         if (mats == None):
             return {'CANCELLED'}
         
         newConv = DataConvert.ConvertVerts(mesh.subModels, mats, nodes)
         
-        GXLists = GXCommandList.ConvertToGXList(newConv, False)
+        GXLists = GXCommandList.ConvertToGXList(newConv, mats)
         
         WriteFile.WriteFile(GXLists, newConv, mats, nodes, texs, self.pack_tex, self.filepath)
 

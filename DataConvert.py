@@ -15,7 +15,6 @@ class NSBMDDataVert():
         self.colr = 0
         self.colg = 0
         self.colb = 0
-        self.cola = 0
         self.targetMatrix = 0
         self.sourceMatrix = 0
 
@@ -331,7 +330,8 @@ def ConvertVerts(meshes, materials, nodes):
                 newVert.colr = round((cVert.colr / 255) * 31)
                 newVert.colg = round((cVert.colg / 255) * 31)
                 newVert.colb = round((cVert.colb / 255) * 31)
-                newVert.cola = round((cVert.cola / 255) * 31)
+                print(newVert.colr)
+                print(cVert.colr)
             else:
                 newVert.normx = round(cVert.normx * 511)
                 newVert.normy = round(cVert.normy * 511)
@@ -411,7 +411,6 @@ def ConvertVerts(meshes, materials, nodes):
                                 newVert.colr = vertsAsArray[k].colr
                                 newVert.colg = vertsAsArray[k].colg
                                 newVert.colb = vertsAsArray[k].colb
-                                newVert.cola = vertsAsArray[k].cola
                                 newVert.sourceMatrix = vertsAsArray[k].sourceMatrix
                                 vData.verts.append(newVert)
                 if (foundExisting):
@@ -454,7 +453,6 @@ def ConvertVerts(meshes, materials, nodes):
                         newVert.colr = vertsAsArray[k].colr
                         newVert.colg = vertsAsArray[k].colg
                         newVert.colb = vertsAsArray[k].colb
-                        newVert.cola = vertsAsArray[k].cola
                         newVert.sourceMatrix = vertsAsArray[k].sourceMatrix
                         vData.verts.append(newVert)
                         if (not vertsAsArray[k].sourceMatrix in vData.matrixDeps):
@@ -493,7 +491,6 @@ def ConvertVerts(meshes, materials, nodes):
                                 newVert.colr = vertsAsArray[k].colr
                                 newVert.colg = vertsAsArray[k].colg
                                 newVert.colb = vertsAsArray[k].colb
-                                newVert.cola = vertsAsArray[k].cola
                                 newVert.sourceMatrix = vertsAsArray[k].sourceMatrix
                                 vData.verts.append(newVert)
                 if (foundExisting):
@@ -536,7 +533,6 @@ def ConvertVerts(meshes, materials, nodes):
                         newVert.colr = vertsAsArray[k].colr
                         newVert.colg = vertsAsArray[k].colg
                         newVert.colb = vertsAsArray[k].colb
-                        newVert.cola = vertsAsArray[k].cola
                         newVert.sourceMatrix = vertsAsArray[k].sourceMatrix
                         vData.verts.append(newVert)
                         if (not vertsAsArray[k].sourceMatrix in vData.matrixDeps):

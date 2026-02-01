@@ -114,16 +114,16 @@ class GXWriter():
             self.commandInd = len(self.commands)
             self.commands.append(0)
 
-def ConvertToGXList(convData, useColor):
+def ConvertToGXList(convData, mats):
     
     retValue = []
-    for j in range(0,len(convData.modelVerts)):
-        vertList = convData.modelVerts[j].verts
+    for k in range(0,len(convData.modelVerts)):
+        vertList = convData.modelVerts[k].verts
     
         GXList = GXWriter()
         
-        triList = convData.modelVerts[j].tris
-        quadList = convData.modelVerts[j].quads
+        triList = convData.modelVerts[k].tris
+        quadList = convData.modelVerts[k].quads
         
         triStrips, indTris = Stripping.CreateStrips(triList, 3)
         
@@ -134,7 +134,11 @@ def ConvertToGXList(convData, useColor):
             for i in range(len(indTris)):
                 GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[indTris[i]].targetMatrix, 0, 0)
                 GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[indTris[i]].u, vertList[indTris[i]].v, 0)
-                GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[indTris[i]].normx, vertList[indTris[i]].normy, vertList[indTris[i]].normz)
+                if (mats[convData.modelVerts[k].materialInd].use_vcol):
+                    GXList.PushCommand(GXCommands.CMD_COLOR.value, vertList[indTris[i]].colr, vertList[indTris[i]].colg, vertList[indTris[i]].colb)
+                else:
+                    GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[indTris[i]].normx, vertList[indTris[i]].normy, vertList[indTris[i]].normz)
+                
                 GXList.PushCommand(GXCommands.CMD_POS.value, vertList[indTris[i]].x, vertList[indTris[i]].y, vertList[indTris[i]].z)
                 i += 1
         
@@ -144,7 +148,10 @@ def ConvertToGXList(convData, useColor):
                 for j in strip:
                     GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[j].targetMatrix, 0, 0)
                     GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[j].u, vertList[j].v, 0)
-                    GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[j].normx, vertList[j].normy, vertList[j].normz)
+                    if (mats[convData.modelVerts[k].materialInd].use_vcol):
+                        GXList.PushCommand(GXCommands.CMD_COLOR.value, vertList[j].colr, vertList[j].colg, vertList[j].colb)
+                    else:
+                        GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[j].normx, vertList[j].normy, vertList[j].normz)
                     GXList.PushCommand(GXCommands.CMD_POS.value, vertList[j].x, vertList[j].y, vertList[j].z)
         
         quadStrips, indQuads = Stripping.CreateStrips(quadList, 4)
@@ -154,7 +161,10 @@ def ConvertToGXList(convData, useColor):
             for i in range(len(indQuads)):
                 GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[indQuads[i]].targetMatrix, 0, 0)
                 GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[indQuads[i]].u, vertList[indQuads[i]].v, 0)
-                GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[indQuads[i]].normx, vertList[indQuads[i]].normy, vertList[indQuads[i]].normz)
+                if (mats[convData.modelVerts[k].materialInd].use_vcol):
+                    GXList.PushCommand(GXCommands.CMD_COLOR.value, vertList[indQuads[i]].colr, vertList[indQuads[i]].colg, vertList[indQuads[i]].colb)
+                else:
+                    GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[indQuads[i]].normx, vertList[indQuads[i]].normy, vertList[indQuads[i]].normz)
                 GXList.PushCommand(GXCommands.CMD_POS.value, vertList[indQuads[i]].x, vertList[indQuads[i]].y, vertList[indQuads[i]].z)
         
         if (len(quadStrips) > 0):
@@ -163,7 +173,10 @@ def ConvertToGXList(convData, useColor):
                 for j in strip:
                     GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[j].targetMatrix, 0, 0)
                     GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[j].u, vertList[j].v, 0)
-                    GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[j].normx, vertList[j].normy, vertList[j].normz)
+                    if (mats[convData.modelVerts[k].materialInd].use_vcol):
+                        GXList.PushCommand(GXCommands.CMD_COLOR.value, vertList[j].colr, vertList[j].colg, vertList[j].colb)
+                    else:
+                        GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[j].normx, vertList[j].normy, vertList[j].normz)
                     GXList.PushCommand(GXCommands.CMD_POS.value, vertList[j].x, vertList[j].y, vertList[j].z)
         
         convData.vertCount += len(triList)
