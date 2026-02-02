@@ -112,6 +112,8 @@ def ProcessMesh(mesh, obj, mats):
                             weights.pop(i)
                             i -= 1
                         i += 1
+                    while len(weights) > 4:
+                        weights.pop()
                     if (weightTotal < 256 and len(weights) > 0):
                         weights[0] = (weights[0][0], weights[0][1] + 256-weightTotal)
                     

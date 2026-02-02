@@ -135,6 +135,8 @@ def ConvertToGXList(convData, mats):
                 GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[indTris[i]].targetMatrix, 0, 0)
                 GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[indTris[i]].u, vertList[indTris[i]].v, 0)
                 if (mats[convData.modelVerts[k].materialInd].use_vcol):
+                    if (mats[convData.modelVerts[k].materialInd].forceNormals):
+                        GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[indTris[i]].normx, vertList[indTris[i]].normy, vertList[indTris[i]].normz)
                     GXList.PushCommand(GXCommands.CMD_COLOR.value, vertList[indTris[i]].colr, vertList[indTris[i]].colg, vertList[indTris[i]].colb)
                 else:
                     GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[indTris[i]].normx, vertList[indTris[i]].normy, vertList[indTris[i]].normz)
@@ -149,6 +151,8 @@ def ConvertToGXList(convData, mats):
                     GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[j].targetMatrix, 0, 0)
                     GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[j].u, vertList[j].v, 0)
                     if (mats[convData.modelVerts[k].materialInd].use_vcol):
+                        if (mats[convData.modelVerts[k].materialInd].forceNormals):
+                            GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[j].normx, vertList[j].normy, vertList[j].normz)
                         GXList.PushCommand(GXCommands.CMD_COLOR.value, vertList[j].colr, vertList[j].colg, vertList[j].colb)
                     else:
                         GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[j].normx, vertList[j].normy, vertList[j].normz)
@@ -162,6 +166,8 @@ def ConvertToGXList(convData, mats):
                 GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[indQuads[i]].targetMatrix, 0, 0)
                 GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[indQuads[i]].u, vertList[indQuads[i]].v, 0)
                 if (mats[convData.modelVerts[k].materialInd].use_vcol):
+                    if (mats[convData.modelVerts[k].materialInd].forceNormals):
+                        GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[indQuads[i]].normx, vertList[indQuads[i]].normy, vertList[indQuads[i]].normz)
                     GXList.PushCommand(GXCommands.CMD_COLOR.value, vertList[indQuads[i]].colr, vertList[indQuads[i]].colg, vertList[indQuads[i]].colb)
                 else:
                     GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[indQuads[i]].normx, vertList[indQuads[i]].normy, vertList[indQuads[i]].normz)
@@ -174,6 +180,8 @@ def ConvertToGXList(convData, mats):
                     GXList.PushCommand(GXCommands.CMD_MTX.value, vertList[j].targetMatrix, 0, 0)
                     GXList.PushCommand(GXCommands.CMD_TEXCOORD.value, vertList[j].u, vertList[j].v, 0)
                     if (mats[convData.modelVerts[k].materialInd].use_vcol):
+                        if (mats[convData.modelVerts[k].materialInd].forceNormals):
+                            GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[j].normx, vertList[j].normy, vertList[j].normz)
                         GXList.PushCommand(GXCommands.CMD_COLOR.value, vertList[j].colr, vertList[j].colg, vertList[j].colb)
                     else:
                         GXList.PushCommand(GXCommands.CMD_NORMAL.value, vertList[j].normx, vertList[j].normy, vertList[j].normz)

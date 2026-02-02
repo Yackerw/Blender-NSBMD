@@ -24,6 +24,7 @@ class NSBMaterial():
         self.scale = (1.0,1.0,1.0)
         self.offs = (0,0,0)
         self.rot = (0,1.0)
+        self.forceNormals = False
 
 
 def GetMaterialInfo(model, texs):
@@ -140,6 +141,8 @@ def GetMaterialInfo(model, texs):
         newMat.rot = (math.sin(rot[2]), math.cos(rot[2]))
         
         newMat.TEXIMAGE_PARAMS = (repeatModeUDS << 16) | (repeatModeVDS << 17) | (texTransformMode << 30)
+        
+        newMat.forceNormals = newMat.use_vcol and texTransformMode == 2
         
         newMat.name = mat.name
         
