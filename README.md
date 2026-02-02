@@ -1,4 +1,4 @@
-### BLENDER NSBMD
+# BLENDER NSBMD
 ## FOR BLENDER 4.1
 Tool for exporting Nintendo DS .nsbmd model files from blender.
 
