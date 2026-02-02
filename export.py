@@ -175,10 +175,10 @@ class ExportModel:
         
         mats = MaterialProcessing.GetMaterialInfo(blenderMesh, texs)
         
-        mesh = ProcessMesh(blenderMesh, selected_obj, mats)
-        
         if (mats == None):
             return {'CANCELLED'}
+        
+        mesh = ProcessMesh(blenderMesh, selected_obj, mats)
         
         newConv = DataConvert.ConvertVerts(mesh.subModels, mats, nodes)
         

@@ -147,8 +147,6 @@ def GetMaterialInfo(model, texs):
         newMat.name = mat.name
         
         if not (newMat.texture_name in texs.texNames):
-            print(texs.texNames[0])
-            print(newMat.texture_name)
             util.show_tex_not_found("NSBMD Exporter", newMat.texture_name)
             return None
         
