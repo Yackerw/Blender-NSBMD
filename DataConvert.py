@@ -160,7 +160,7 @@ def FindNode(nodeCtx, nodeInd, isCombo):
             return i
     return -1
 
-def ProcessNodes(data, nodes, inverseWeightMap):
+def ProcessNodes(data, nodes, inverseWeightMap, mats):
     data.NSBCommands.append(0x26) # set up first node; always parent most
     data.NSBCommands.append(len(nodes)-1)
     data.NSBCommands.append(len(nodes)-1)
@@ -237,6 +237,12 @@ def ProcessNodes(data, nodes, inverseWeightMap):
             currMat = cVert.materialInd
             data.NSBCommands.append(0x4)
             data.NSBCommands.append(currMat)
+            if (((mats[currMat].TEXIMAGE_PARAMS & 0xC0000000) >> 30) == 2):
+                data.NSBCommands.append(0xC)
+                data.NSBCommands.append(currMat) # material
+                data.NSBCommands.append(0) # ?
+                nodeCtx.curr_mtx = -1 # just in case tbh idk
+            
         data.NSBCommands.append(0x5)
         data.NSBCommands.append(i)
         
@@ -256,7 +262,7 @@ def ProcessNodes(data, nodes, inverseWeightMap):
                 preVert = cVert.verts[j].sourceMatrix
                 cVert.verts[j].targetMatrix = FindNode(nodeCtx, cVert.verts[j].sourceMatrix, True)
         
-    data.NSBCommands.append(1) # END: TODO: handle this when writing so we cover all meshes
+    data.NSBCommands.append(1) # END
 
 def ConvertVerts(meshes, materials, nodes):
     data = NSBMDModelData()
@@ -330,8 +336,6 @@ def ConvertVerts(meshes, materials, nodes):
                 newVert.colr = round((cVert.colr / 255) * 31)
                 newVert.colg = round((cVert.colg / 255) * 31)
                 newVert.colb = round((cVert.colb / 255) * 31)
-                print(newVert.colr)
-                print(cVert.colr)
             else:
                 newVert.normx = round(cVert.normx * 511)
                 newVert.normy = round(cVert.normy * 511)
@@ -582,6 +586,6 @@ def ConvertVerts(meshes, materials, nodes):
     data.NSBCommands.append(0)
     data.NSBCommands.append(1)
     
-    ProcessNodes(data,nodes,inverseWeightMap)
+    ProcessNodes(data,nodes,inverseWeightMap, materials)
     
     return data

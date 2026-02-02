@@ -242,23 +242,70 @@ def WriteMaterials(f, materials, texs):
     
     i = 0
     for mat in materials:
+        additionalSize = 0
         curr_offs = f.tell()
         f.seek(infoOffsets.offsetOffsets[i], 0)
-        util.write_integer(f, "<", curr_offs - texture_pairing_offs) # curiously, the offsets stored are relative to the texture pairing offset/first value in materials in general?
+        util.write_short(f, "<", curr_offs - texture_pairing_offs) # curiously, the offsets stored are relative to the texture pairing offset/first value in materials in general?
+        flags = 0
+        flags |= 0x1EC0
+        if (mat.use_vcol):
+            flags |= 0x100 # vtx color
+        texMtxMode = ((mat.TEXIMAGE_PARAMS & 0xC0000000) >> 30)
+        if texMtxMode != 2 and texMtxMode != 0:
+            flags |= 1 # use matrix
+            additionalSize + 0x10
+        else:
+            flags |= 0x2 # omit scale
+            flags |= 0x4 # omit rotation
+            flags |= 0x8 # omit position
+        if texMtxMode == 2:
+            flags |= 0x2001 # 0x2000 == sphere map
+            additionalSize += 0x48
+            flags &= ~2 # unset omit scale
+        util.write_short(f, "<", 0)
         f.seek(0, 2)
+        
         util.write_short(f, "<", 0) # dummy
-        util.write_short(f, "<", 0x2C) # material length
+        util.write_short(f, "<", 0x2C+additionalSize) # material length
         util.write_integer(f, "<", mat.DIF_AMB) # DIF_AMB register
         util.write_integer(f, "<", mat.SPE_EMI) # SPE_EMI register
         util.write_integer(f, "<", mat.POLY_ATTR_OR) # POLYGON_ATTR value to be OR'd with; 31 alpha, front faces
         util.write_integer(f, "<", mat.POLY_ATTR_MASK) # POLYGON_ATTR value to be AND'd with to clear old values
         util.write_integer(f, "<", mat.TEXIMAGE_PARAMS) # TEXIMAGE_PARAM bit16-19 and 30-31: 16-19 are repeat type, 30-31 are transformation mode
         util.write_integer(f, "<", 0xFFFFFFFF) # unknown
-        util.write_integer(f, "<", 0x1FCE0000) # unknown
+        util.write_short(f, "<", 0x0000) # ?
+        util.write_short(f, "<", flags) # flags
         util.write_short(f, "<", mat.tex_width) # texture width
         util.write_short(f, "<", mat.tex_height) # texture height
         util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point. a guess is texture matrix scale?
         util.write_integer(f, "<", 0x1000) # unknown: 1.0 in DS fixed point
+        if ((flags & 2) == 0):
+            util.write_integer(f, "<", int(round(mat.scale[0]*4096)))
+            util.write_integer(f, "<", int(round(mat.scale[1]*4096)))
+        if ((flags & 4) == 0):
+            util.write_short(f, "<", int(round(mat.rot[0]*4096)))
+            util.write_short(f, "<", int(round(mat.rot[1]*4096)))
+        if ((flags & 8) == 0):
+            util.write_short(f, "<", int(round(mat.offs[0]*4096)))
+            util.write_short(f, "<", int(round(mat.offs[1]*4096)))
+        if (flags & 0x2000):
+            util.write_integer(f, "<", int(0x1000*(mat.tex_width/16)))
+            util.write_integer(f, "<", 0)
+            util.write_integer(f, "<", 0)
+            util.write_integer(f, "<", 0)
+            util.write_integer(f, "<", 0)
+            util.write_integer(f, "<", int(0x1000*(mat.tex_height/16)))
+            util.write_integer(f, "<", 0)
+            util.write_integer(f, "<", 0)
+            util.write_integer(f, "<", 0)
+            util.write_integer(f, "<", 0)
+            util.write_integer(f, "<", int(0x1000*(mat.tex_width/16))) # ? game code explicitly multiplies this by 16, unlike the other 2 for some reason? afaik it's not used by the gpu though
+            util.write_integer(f, "<", 0)
+            util.write_integer(f, "<", 0)
+            util.write_integer(f, "<", 0)
+            util.write_integer(f, "<", 0)
+            util.write_integer(f, "<", 0x1000)
+        # TODO: apply full matrix to normal and position modes?
         i += 1
     
     

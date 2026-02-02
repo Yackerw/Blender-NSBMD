@@ -20,6 +20,9 @@ class NSBMaterial():
         self.tex_ind = 0
         self.pal_ind = -1
         self.matrix = (0, 0, 0)
+        self.scale = (1.0,1.0,1.0)
+        self.offs = (0,0,0)
+        self.rot = (0,1.0)
 
 
 def GetMaterialInfo(model, texs):
@@ -128,7 +131,12 @@ def GetMaterialInfo(model, texs):
         texTransformMode = int(vector_node.transform_mode) # none, UV, normal, position
 
         newMat.matrix = mathutils.Matrix.LocRotScale(
-            get_list(vector_node.inputs["UV Offset"]), get_list(vector_node.inputs["UV Rotation"]), get_list(vector_node.inputs["UV Scale"]))
+            get_list(vector_node.inputs["UV Offset"]), mathutils.Euler(get_list(vector_node.inputs["UV Rotation"])), get_list(vector_node.inputs["UV Scale"]))
+        
+        newMat.offs = get_list(vector_node.inputs["UV Offset"])
+        newMat.scale = get_list(vector_node.inputs["UV Scale"])
+        rot = get_list(vector_node.inputs["UV Rotation"])
+        newMat.rot = (math.sin(rot[2]), math.cos(rot[2]))
         
         newMat.TEXIMAGE_PARAMS = (repeatModeUDS << 16) | (repeatModeVDS << 17) | (texTransformMode << 30)
         
