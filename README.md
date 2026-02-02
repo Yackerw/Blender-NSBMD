@@ -17,6 +17,9 @@ Not an issue, but an individual vertex only supports up to 4 weights applied to 
 
 ## CREDITS
 Yacker - primary conversion work and some reverse engineering
+
 Arg - primary blender interface work
+
 Apicula - useful reference
+
 Gbatek - useful reference
