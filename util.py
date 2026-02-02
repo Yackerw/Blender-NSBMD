@@ -4,6 +4,10 @@ import bpy
 
 # blender functions
 
+def show_uv_invalid(tool_name):
+    def draw(self, context):
+        self.layout.label(text="UV out of range!")
+    bpy.context.window_manager.popup_menu(draw_func=draw, title=tool_name, icon="ERROR")
 
 def show_not_read_nsbtx(tool_name):
     """Shows a pop-up to tell the user the file couldn't be read"""

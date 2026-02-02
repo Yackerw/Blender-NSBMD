@@ -1,6 +1,7 @@
 import bpy
 from . import util
 import mathutils
+import math
 
 
 class NSBMaterial():

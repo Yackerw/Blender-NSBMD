@@ -180,6 +180,9 @@ class ExportModel:
         
         newConv = DataConvert.ConvertVerts(mesh.subModels, mats, nodes)
         
+        if (newConv == None):
+            return {'CANCELLED'}
+        
         GXLists = GXCommandList.ConvertToGXList(newConv, mats)
         
         WriteFile.WriteFile(GXLists, newConv, mats, nodes, texs, self.pack_tex, self.filepath)

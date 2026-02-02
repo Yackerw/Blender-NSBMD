@@ -1,6 +1,7 @@
 import bpy
 import mathutils
 import math
+from . import util
 
 class NSBMDDataVert():
     def __init__(self):
@@ -320,6 +321,44 @@ def ConvertVerts(meshes, materials, nodes):
     vert_maxZ = -99999999999999
     vert_minZ = 99999999999999
     
+    UVScaleX = []
+    UVScaleY = []
+    
+    for mesh, mat in zip(meshes, materials):
+        max_u = -9999999999999
+        max_v = -9999999999999
+        min_u = 9999999999999
+        min_v = 9999999999999
+        valid_mat = (mat.TEXIMAGE_PARAMS & 0xC0000000) == 0
+        for vert in mesh.verts:
+            u = vert.u*16*mat.tex_width
+            v = vert.v*16*mat.tex_height
+            max_u = max(u,max_u)
+            max_v = max(v,max_v)
+            min_u = min(u,min_u)
+            min_v = min(v,min_v)
+        max_u = max(abs(max_u), abs(min_u))
+        max_v = max(abs(max_v), abs(min_v))
+        max_uv_val = 32767
+        if (max_u > max_uv_val):
+            if valid_mat == False:
+                util.show_uv_invalid("NSBMD Exporter")
+                return None
+            rounded_scale = int(math.ceil((max_u/max_uv_val)*4096))
+            UVScaleX.append(rounded_scale/4096)
+            mat.TEXIMAGE_PARAMS |= 0x40000000
+        else:
+            UVScaleX.append(1.0)
+        if (max_v > max_uv_val):
+            if valid_mat == False:
+                util.show_uv_invalid("NSBMD Exporter")
+                return None
+            rounded_scale = int(math.ceil((max_v/max_uv_val)*4096))
+            UVScaleY.append(rounded_scale/4096)
+            mat.TEXIMAGE_PARAMS |= 0x40000000
+        else:
+            UVScaleY.append(1.0)
+    
     j = 0
     for mesh, mat in zip(meshes, materials):
         vertList = []
@@ -365,6 +404,11 @@ def ConvertVerts(meshes, materials, nodes):
             
             newVert.u = int(round(cVert.u * 16 * mat.tex_width))
             newVert.v = int(round(cVert.v * 16 * mat.tex_height))
+            
+            if (UVScaleX[j] != 1.0):
+                newVert.u = int(newVert.u/UVScaleX[j])
+            if (UVScaleY[j] != 1.0):
+                newVert.v = int(newVert.v/UVScaleY[j])
             
             if not cVert.weights in weightMap:
                 weightMap[cVert.weights] = len(inverseWeightMap)
