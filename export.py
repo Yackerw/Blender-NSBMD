@@ -35,7 +35,7 @@ class NSModel:
         self.subModels = []
         
 
-def ProcessMesh(mesh, obj, mats):
+def ProcessMesh(mesh, obj, mats, mkds_scale):
     NSMesh = NSModel()
     import bmesh
     bm = bmesh.new()
@@ -82,6 +82,10 @@ def ProcessMesh(mesh, obj, mats):
                     newVert.x = mesh.vertices[loop.vertex_index].undeformed_co.x
                     newVert.y = mesh.vertices[loop.vertex_index].undeformed_co.y
                     newVert.z = mesh.vertices[loop.vertex_index].undeformed_co.z
+                    if (mkds_scale == True):
+                        newVert.x /= 16
+                        newVert.y /= 16
+                        newVert.z /= 16
                     if (mats[matId].use_vcol == True):
                         if (colors == None):
                             newVert.colr = 255
@@ -141,9 +145,10 @@ def ProcessMesh(mesh, obj, mats):
     return NSMesh
 
 class ExportModel:
-    def __init__(self, context, filepath, settings, pack_tex):
+    def __init__(self, context, filepath, settings, pack_tex, mkds_scale):
         self.filepath = filepath
         self.pack_tex = pack_tex
+        self.mkds_scale = mkds_scale
 
     def execute(self):
         scene_ob = set(bpy.context.scene.objects[:])
@@ -177,7 +182,7 @@ class ExportModel:
 
             for mod in selected_obj.modifiers:
                 if mod.type == 'ARMATURE' and mod.object != None:
-                    nodes = ArmatureProcessing.GetNodes(mod.object)
+                    nodes = ArmatureProcessing.GetNodes(mod.object, self.mkds_scale)
 
             if nodes == None:
                 nodes = []
@@ -191,7 +196,7 @@ class ExportModel:
             if (mats == None):
                 return {'CANCELLED'}
 
-            mesh = ProcessMesh(blenderMesh, selected_obj, mats)
+            mesh = ProcessMesh(blenderMesh, selected_obj, mats, self.mkds_scale)
 
             newConv = DataConvert.ConvertVerts(mesh.subModels, mats, nodes)
 

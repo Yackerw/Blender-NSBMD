@@ -12,16 +12,29 @@ class Node():
         self.validTransform = True
         self.blenderBone = None
 
-def GetNodes(arma):
+def GetNodes(arma, mkds_scale):
     bone_ind = 0
     retValue = []
     for bone in arma.data.bones:
         node = Node()
         node.blenderBone = bone
         node.name = bone.name
-        mtx = bone.matrix_local
-        if (bone.parent != None):
-            mtx = bone.parent.matrix_local.inverted_safe() @ mtx
+        
+        parentId = 0
+        for pBone in retValue:
+            if pBone.blenderBone == bone.parent:
+                node.parent = parentId
+                break
+            parentId += 1
+        
+        local_mtx = bone.matrix_local
+        if (mkds_scale == True):
+            locpos, locrot, locscale = local_mtx.decompose()
+            locpos = mathutils.Vector((locpos.x/16, locpos.y/16, locpos.z/16))
+            local_mtx = mathutils.Matrix.LocRotScale(locpos, locrot, locscale)
+        mtx = local_mtx
+        if (node.parent != -1):
+            mtx = retValue[node.parent].inverseMatrix @ mtx
         pos = mtx.to_translation()
         node.position = mathutils.Vector((pos.x*4096, pos.y*4096, pos.z*4096))
         #node.scale doesn't need changing and never will as blender doesn't encode scale into bones
@@ -32,7 +45,7 @@ def GetNodes(arma):
             for j in range(0,3):
                 rotationMatrix[i].append(node.rotation[i][j]*4096)
         node.rotation = mathutils.Matrix(rotationMatrix)
-        node.inverseMatrix = bone.matrix_local.inverted_safe()
+        node.inverseMatrix = local_mtx.inverted_safe()
         if (node.inverseMatrix == mathutils.Matrix.Identity(4)):
             node.validTransform = False
         invMatrix = []
@@ -41,14 +54,6 @@ def GetNodes(arma):
             for j in range(0,4):
                 invMatrix[i].append(node.inverseMatrix[i][j]*4096)
         node.inverseMatrix = mathutils.Matrix(invMatrix)"""
-        
-        parentId = 0
-        for pBone in retValue:
-            if pBone.blenderBone == bone.parent:
-                node.parent = parentId
-                break
-            parentId += 1
-        
         
         retValue.append(node)
         

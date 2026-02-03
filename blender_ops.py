@@ -23,6 +23,11 @@ class ExportNSBMD(bpy.types.Operator, ExportHelper):
         name="Pack textures",
         description="Packs textures from nsbtx into nsbmd.",
         default=True)
+    
+    mkds_scale: BoolProperty(
+        name="MKDS CT Scale",
+        description="Scales model down 16x for use with MKDS custom tracks.",
+        default=False)
 
     def draw(self, context):
         layout = self.layout
@@ -38,12 +43,13 @@ class ExportNSBMD(bpy.types.Operator, ExportHelper):
         wrapped_text = textwrap.TextWrapper(width=letter_count).wrap(text=info_text)
         [box.label(text=a) for a in wrapped_text]
         layout.row().prop(self, "pack_tex")
+        layout.row().prop(self, "mkds_scale")
         #box.row().prop(self, "setting_i_suppose")
 
     def execute(self, context):
         # preferences = bpy.context.preferences.addons[__package__.partition(".")[0]].preferences
         settings = {}
-        return export.ExportModel(context, self.filepath, settings, self.pack_tex).execute()
+        return export.ExportModel(context, self.filepath, settings, self.pack_tex, self.mkds_scale).execute()
 
 
 def menu_func_export(self, context):  # add to dynamic menu
