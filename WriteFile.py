@@ -372,8 +372,6 @@ def WriteBMD(f, GX_list, NSBMDData_list, materials_list, nodes_list, names, texs
         f.seek(infoOffs.offsetOffsets[i], 0)
         util.write_integer(f, "<", (curr_offs-MDL0_size_offs)+4)
         f.seek(0, 2)
-        print("Hiii!")
-        print(curr_offs)
         # model size
         model_size_offs = f.tell()
         util.write_integer(f, "<", 0)
