@@ -6,11 +6,18 @@ Before exporting, enter the "shading" tab in blender and set up NSBMD nodes for 
 
 You also have to assign a .nsbtx file to the model using the NSBMD tab in the side panel in blender's 3D view which you can open with the n key on your keyboard. The names of the textures inside the nsbtx should match the texture names in blender.
 
+For exporting multiple meshes in one nsbmd file, give all of them an index in the side panel of the 3D view, select them all, and export. Only the model with the first index in the file needs an nsbtx set.
+
 ## KNOWN ISSUES
 Position UV transforms are untested, use at your own peril
 
 Billboarding is not yet implemented; the option in the material nodes will not have any effect on exported files
 Not an issue, but an individual vertex only supports up to 4 weights applied to it. Any more will be removed on export.
+
+## TROUBLESHOOTING
+If you get an "Invalid patricia tree" error on export, ensure you don't have any bones that share a name with the object that is rigged to them (or otherwise duplicate names for anything; though I believe blender generally disallows this otherwise)
+
+If you get a "Palette not found" error on export, you may need to either rename the palette in the nsbtx or assign one to the material under the "advanced" drop down for the NSBMD shader. By default, when there's no palette set there, it will look for a palette with the same name as the texture with _pl appended; ex. "texture01" would automatically be assigned palette "texture01_pl" with no palette assigned.
 
 ## FUTURE PLANS
 .nsbca animation exporting
