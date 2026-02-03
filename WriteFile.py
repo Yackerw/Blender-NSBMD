@@ -358,100 +358,103 @@ def WriteInverseMatrices(f, nodes):
                 util.write_signed_integer(f, "<", int(node.inverseMatrix[j][i]*4096))
     
 
-def WriteBMD(f, GXLists, convertedData, materials, nodes, texs):
+def WriteBMD(f, GX_list, NSBMDData_list, materials_list, nodes_list, names, texs):
     util.write_integer(f, "<", 0x304C444D)
     # chunk size...fill in later...
     MDL0_size_offs = f.tell()
     util.write_integer(f, "<", 0)
     # i hate these info blocks
     info_block_start = f.tell()
-    nameTest = []
-    nameTest.append("Model")
-    infoOffs = WriteInfoBlock(f, 1, nameTest)
-    curr_offs = f.tell()
-    f.seek(infoOffs.offsetOffsets[0], 0)
-    util.write_integer(f, "<", (curr_offs-MDL0_size_offs)+4)
-    f.seek(0, 2)
-    # model size
-    model_size_offs = f.tell()
-    util.write_integer(f, "<", 0)
-    # render command list offset, all these offsets are relative to "model size"
-    render_list_offs = f.tell()
-    util.write_integer(f, "<", 0)
-    # material offset
-    material_offs_offs = f.tell()
-    util.write_integer(f, "<", 0)
-    # offset to "VertexMesh" value; great name, gbatek
-    vertexMesh_offs_offs = f.tell()
-    util.write_integer(f, "<", 0)
-    # offset to inverse bone matrices
-    inverse_matrices_offs = f.tell()
-    util.write_integer(f, "<", 0)
-    # ?
-    util.write_byte(f, "<", 0)
-    util.write_byte(f, "<", 0)
-    util.write_byte(f, "<", 0)
-    # bone count. fill out once we get bones!
-    util.write_byte(f, "<", len(nodes))
-    # material count
-    util.write_byte(f, "<", 1)
-    # vertexmesh count
-    util.write_byte(f, "<", 1)
-    # ? do bone count again?
-    util.write_short(f, "<", len(nodes))
-    # scale factor
-    util.write_integer(f, "<", convertedData.scaleX)
-    util.write_integer(f, "<", int(16777216 / convertedData.scaleX))
-    # data counts (only for debugging, considering it uses draw lists?)
-    #util.write_short(f, "<", convertedData.vertCount)
-    #util.write_short(f, "<", convertedData.triCount + convertedData.quadCount)
-    #util.write_short(f, "<", convertedData.triCount)
-    #util.write_short(f, "<", convertedData.quadCount)
-    util.write_integer(f, "<", 0)
-    util.write_integer(f, "<", 0)
-    util.write_signed_short(f, "<", int(min(max((4096*convertedData.boundsX)/convertedData.scaleX, -32768),32767)))
-    util.write_signed_short(f, "<", int(min(max((4096*convertedData.boundsY)/convertedData.scaleX, -32768),32767)))
-    util.write_signed_short(f, "<", int(min(max((4096*convertedData.boundsZ)/convertedData.scaleX, -32768),32767)))
-    util.write_signed_short(f, "<", int(min(max((4096*convertedData.boundsXWidth)/convertedData.scaleX, -32768),32767)))
-    util.write_signed_short(f, "<", int(min(max((4096*convertedData.boundsHeight)/convertedData.scaleX, -32768),32767)))
-    util.write_signed_short(f, "<", int(min(max((4096*convertedData.boundsZWidth)/convertedData.scaleX, -32768),32767)))
-    util.write_integer(f, "<", 4096)
-    util.write_integer(f, "<", 4096)
-    
-    WriteNodes(f, nodes)
-    
-    curr_offs = f.tell()
-    f.seek(render_list_offs, 0)
-    util.write_integer(f, "<", curr_offs-model_size_offs)
-    f.seek(0, 2)
-    WriteCommands(f, convertedData.NSBCommands)
-    curr_offs = f.tell()
-    f.seek(material_offs_offs, 0)
-    util.write_integer(f, "<", curr_offs-model_size_offs)
-    f.seek(0, 2)
-    WriteMaterials(f, materials, texs)
-    curr_offs = f.tell()
-    f.seek(vertexMesh_offs_offs, 0)
-    util.write_integer(f, "<", curr_offs-model_size_offs)
-    f.seek(0, 2)
-    WriteVertexMesh(f, GXLists, materials)
-    curr_offs = f.tell()
-    f.seek(inverse_matrices_offs, 0)
-    util.write_integer(f, "<", curr_offs-model_size_offs)
-    f.seek(0,2)
-    WriteInverseMatrices(f, nodes)
-    
-    curr_offs = f.tell()
-    
-    f.seek(model_size_offs, 0)
-    util.write_integer(f, "<", curr_offs - model_size_offs)
-    
-    f.seek(MDL0_size_offs, 0)
-    util.write_integer(f, "<", (curr_offs-MDL0_size_offs)+4)
-    f.seek(0, 2)
+    infoOffs = WriteInfoBlock(f, len(names), names)
+    i = 0
+    for GXLists, convertedData, materials, nodes in zip(GX_list, NSBMDData_list, materials_list, nodes_list):
+        curr_offs = f.tell()
+        f.seek(infoOffs.offsetOffsets[i], 0)
+        util.write_integer(f, "<", (curr_offs-MDL0_size_offs)+4)
+        f.seek(0, 2)
+        print("Hiii!")
+        print(curr_offs)
+        # model size
+        model_size_offs = f.tell()
+        util.write_integer(f, "<", 0)
+        # render command list offset, all these offsets are relative to "model size"
+        render_list_offs = f.tell()
+        util.write_integer(f, "<", 0)
+        # material offset
+        material_offs_offs = f.tell()
+        util.write_integer(f, "<", 0)
+        # offset to "VertexMesh" value; great name, gbatek
+        vertexMesh_offs_offs = f.tell()
+        util.write_integer(f, "<", 0)
+        # offset to inverse bone matrices
+        inverse_matrices_offs = f.tell()
+        util.write_integer(f, "<", 0)
+        # ?
+        util.write_byte(f, "<", 0)
+        util.write_byte(f, "<", 0)
+        util.write_byte(f, "<", 0)
+        # bone count. fill out once we get bones!
+        util.write_byte(f, "<", len(nodes))
+        # material count
+        util.write_byte(f, "<", 1)
+        # vertexmesh count
+        util.write_byte(f, "<", 1)
+        # ? do bone count again?
+        util.write_short(f, "<", len(nodes))
+        # scale factor
+        util.write_integer(f, "<", convertedData.scaleX)
+        util.write_integer(f, "<", int(16777216 / convertedData.scaleX))
+        # data counts (only for debugging, considering it uses draw lists?)
+        #util.write_short(f, "<", convertedData.vertCount)
+        #util.write_short(f, "<", convertedData.triCount + convertedData.quadCount)
+        #util.write_short(f, "<", convertedData.triCount)
+        #util.write_short(f, "<", convertedData.quadCount)
+        util.write_integer(f, "<", 0)
+        util.write_integer(f, "<", 0)
+        util.write_signed_short(f, "<", int(min(max((4096*convertedData.boundsX)/convertedData.scaleX, -32768),32767)))
+        util.write_signed_short(f, "<", int(min(max((4096*convertedData.boundsY)/convertedData.scaleX, -32768),32767)))
+        util.write_signed_short(f, "<", int(min(max((4096*convertedData.boundsZ)/convertedData.scaleX, -32768),32767)))
+        util.write_signed_short(f, "<", int(min(max((4096*convertedData.boundsXWidth)/convertedData.scaleX, -32768),32767)))
+        util.write_signed_short(f, "<", int(min(max((4096*convertedData.boundsHeight)/convertedData.scaleX, -32768),32767)))
+        util.write_signed_short(f, "<", int(min(max((4096*convertedData.boundsZWidth)/convertedData.scaleX, -32768),32767)))
+        util.write_integer(f, "<", 4096)
+        util.write_integer(f, "<", 4096)
+        
+        WriteNodes(f, nodes)
+        
+        curr_offs = f.tell()
+        f.seek(render_list_offs, 0)
+        util.write_integer(f, "<", curr_offs-model_size_offs)
+        f.seek(0, 2)
+        WriteCommands(f, convertedData.NSBCommands)
+        curr_offs = f.tell()
+        f.seek(material_offs_offs, 0)
+        util.write_integer(f, "<", curr_offs-model_size_offs)
+        f.seek(0, 2)
+        WriteMaterials(f, materials, texs)
+        curr_offs = f.tell()
+        f.seek(vertexMesh_offs_offs, 0)
+        util.write_integer(f, "<", curr_offs-model_size_offs)
+        f.seek(0, 2)
+        WriteVertexMesh(f, GXLists, materials)
+        curr_offs = f.tell()
+        f.seek(inverse_matrices_offs, 0)
+        util.write_integer(f, "<", curr_offs-model_size_offs)
+        f.seek(0,2)
+        WriteInverseMatrices(f, nodes)
+        
+        curr_offs = f.tell()
+        
+        f.seek(model_size_offs, 0)
+        util.write_integer(f, "<", curr_offs - model_size_offs)
+        
+        f.seek(MDL0_size_offs, 0)
+        util.write_integer(f, "<", (curr_offs-MDL0_size_offs)+4)
+        f.seek(0, 2)
+        i += 1
     
 
-def WriteFile(GXLists, convertedData, materials, nodes, texs, pack_tex, filepath):
+def WriteFile(GXLists, convertedData, materials, nodes, texs, names, pack_tex, filepath):
     f = open(filepath, "wb")
     # simple header stuff
     util.write_integer(f, "<", 0x30444d42)
@@ -473,7 +476,7 @@ def WriteFile(GXLists, convertedData, materials, nodes, texs, pack_tex, filepath
     # offset to TEX0
     util.write_integer(f, "<", 0)
     
-    WriteBMD(f, GXLists, convertedData, materials, nodes, texs)
+    WriteBMD(f, GXLists, convertedData, materials, nodes, names, texs)
     
     if (pack_tex == True):
         curr_offs = f.tell()

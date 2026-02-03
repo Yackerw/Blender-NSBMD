@@ -165,6 +165,12 @@ class ExportModel:
         if texs == None:
             util.show_not_read_nsbtx("NSBMD Exporter")
             return {'CANCELLED'}
+        
+        nodes_list = []
+        NSBMDData_list = []
+        GX_list = []
+        mats_list = []
+        names = []
 
         for selected_obj in mesh_list_sorted:
             nodes = None
@@ -193,7 +199,13 @@ class ExportModel:
                 return {'CANCELLED'}
 
             GXLists = GXCommandList.ConvertToGXList(newConv, mats)
+            
+            nodes_list.append(nodes)
+            mats_list.append(mats)
+            GX_list.append(GXLists)
+            NSBMDData_list.append(newConv)
+            names.append(selected_obj.name)
 
-            WriteFile.WriteFile(GXLists, newConv, mats, nodes, texs, self.pack_tex, self.filepath)
+        WriteFile.WriteFile(GX_list, NSBMDData_list, mats_list, nodes_list, texs, names, self.pack_tex, self.filepath)
 
         return{'FINISHED'}
