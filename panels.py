@@ -61,3 +61,4 @@ class NSBMD_PT_Texture(GENERIC_panel, bpy.types.Panel):
             obj = context.object
             layout.operator("operator.nsbmd_assign_nsbtx")
             layout.prop(obj.data, "nsbtx_path")
+            layout.prop(obj.data, "nsbtx_index")

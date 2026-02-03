@@ -146,47 +146,54 @@ class ExportModel:
         self.pack_tex = pack_tex
 
     def execute(self):
-        selected_obj = bpy.context.active_object
-        
-        if (selected_obj.type != "MESH"):
+        scene_ob = set(bpy.context.scene.objects[:])
+        mesh_list = [a for a in bpy.context.selected_objects if a.type == "MESH" and a in scene_ob]
+        mesh_list_indices = [a.data.nsbtx_index for a in mesh_list]
+        mesh_list_indices_sorted = sorted(mesh_list_indices)
+        mesh_list_sorted = []
+        for m, i in zip(mesh_list, mesh_list_indices):
+            mesh_list_sorted.insert(mesh_list_indices_sorted.index(i), m)
+
+        if len(mesh_list_sorted) == 0:
             def draw(self, context):
-                self.layout.label(text="No valid model was selected!")
+                self.layout.label(text="No valid models were selected!")
             bpy.context.window_manager.popup_menu(draw_func=draw, title="NSBMD Exporter", icon="ERROR")
             return {'CANCELLED'}
-        
-        texs = NSBTX.OpenNSBTX(selected_obj.data.nsbtx_path)
-        
+
+        texs = NSBTX.OpenNSBTX(mesh_list_sorted[0].data.nsbtx_path)
+
         if texs == None:
             util.show_not_read_nsbtx("NSBMD Exporter")
             return {'CANCELLED'}
-        
-        nodes = None
-        
-        for mod in selected_obj.modifiers:
-            if mod.type == 'ARMATURE' and mod.object != None:
-                nodes = ArmatureProcessing.GetNodes(mod.object)
-        
-        if nodes == None:
-            nodes = []
-        
-        nodes.append(ArmatureProcessing.GetBonelessNode(selected_obj))
-        
-        blenderMesh = selected_obj.to_mesh(preserve_all_data_layers=True,depsgraph=bpy.context.evaluated_depsgraph_get())
-        
-        mats = MaterialProcessing.GetMaterialInfo(blenderMesh, texs)
-        
-        if (mats == None):
-            return {'CANCELLED'}
-        
-        mesh = ProcessMesh(blenderMesh, selected_obj, mats)
-        
-        newConv = DataConvert.ConvertVerts(mesh.subModels, mats, nodes)
-        
-        if (newConv == None):
-            return {'CANCELLED'}
-        
-        GXLists = GXCommandList.ConvertToGXList(newConv, mats)
-        
-        WriteFile.WriteFile(GXLists, newConv, mats, nodes, texs, self.pack_tex, self.filepath)
+
+        for selected_obj in mesh_list_sorted:
+            nodes = None
+
+            for mod in selected_obj.modifiers:
+                if mod.type == 'ARMATURE' and mod.object != None:
+                    nodes = ArmatureProcessing.GetNodes(mod.object)
+
+            if nodes == None:
+                nodes = []
+
+            nodes.append(ArmatureProcessing.GetBonelessNode(selected_obj))
+
+            blenderMesh = selected_obj.to_mesh(preserve_all_data_layers=True,depsgraph=bpy.context.evaluated_depsgraph_get())
+
+            mats = MaterialProcessing.GetMaterialInfo(blenderMesh, texs)
+
+            if (mats == None):
+                return {'CANCELLED'}
+
+            mesh = ProcessMesh(blenderMesh, selected_obj, mats)
+
+            newConv = DataConvert.ConvertVerts(mesh.subModels, mats, nodes)
+
+            if (newConv == None):
+                return {'CANCELLED'}
+
+            GXLists = GXCommandList.ConvertToGXList(newConv, mats)
+
+            WriteFile.WriteFile(GXLists, newConv, mats, nodes, texs, self.pack_tex, self.filepath)
 
         return{'FINISHED'}
